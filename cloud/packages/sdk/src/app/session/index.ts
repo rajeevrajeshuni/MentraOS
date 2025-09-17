@@ -287,6 +287,8 @@ export class AppSession {
     this.events = new EventManager(
       this.subscribe.bind(this),
       this.unsubscribe.bind(this),
+      this.config.packageName,
+      this.getHttpsServerUrl(),
     );
     this.layouts = new LayoutManager(config.packageName, this.send.bind(this));
 
