@@ -123,6 +123,7 @@ const EditApp: React.FC = () => {
   const [importConfigData, setImportConfigData] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [sameValueWarning , setSameValueWarning] = useState(false);
 
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -443,6 +444,7 @@ const EditApp: React.FC = () => {
     try {
       if (!packageName) throw new Error("Package name is missing");
       if (!currentOrg) throw new Error("No organization selected");
+      if (sameValueWarning) throw new Error("Please resolve duplicate option values in settings before saving.");
 
       // Normalize URLs before submission
       const normalizedData = {
@@ -1446,6 +1448,8 @@ const EditApp: React.FC = () => {
                   <SettingsEditor
                     settings={formData.settings || []}
                     onChange={handleSettingsChange}
+                    setSameValueWarning={setSameValueWarning}
+                    toast = {toast}
                   />
                 </div>
 
