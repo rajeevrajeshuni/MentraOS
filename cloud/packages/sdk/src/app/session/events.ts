@@ -34,7 +34,10 @@ import {
 } from "../../types";
 import { DashboardMode } from "../../types/dashboard";
 import { PermissionErrorDetail } from "../../types/messages/cloud-to-app";
-import { microPhoneWarnLog } from "src/utils/permissions-utils";
+import {
+  calendarWarnLog,
+  microPhoneWarnLog,
+} from "src/utils/permissions-utils";
 
 /** 🎯 Type-safe event handler function */
 type Handler<T> = (data: T) => void;
@@ -127,7 +130,7 @@ export class EventManager {
     private subscribe: (type: ExtendedStreamType) => void,
     private unsubscribe: (type: ExtendedStreamType) => void,
     private packageName: string,
-    private baseUrl?: string,
+    private baseUrl: string,
   ) {
     this.emitter = new EventEmitter();
     this.handlers = new Map();
@@ -139,7 +142,8 @@ export class EventManager {
 
 onTranscription(handler: Handler<TranscriptionData>) {
   // Only make the API call if we have a base URL (server-side environment)
-  microPhoneWarnLog(this.baseUrl || "", this.packageName, this.onTranscription.name);
+  console.log("Doing warning check...")
+  microPhoneWarnLog(this.baseUrl, this.packageName, this.onTranscription.name);
 
   return this.addHandler(createTranscriptionStream("en-US"), handler);
 }
@@ -374,6 +378,10 @@ onTranscription(handler: Handler<TranscriptionData>) {
     type: T,
     handler: Handler<EventData<T>>,
   ): () => void {
+    // Check permissions for specific stream types
+    if (type === StreamType.CALENDAR_EVENT) {
+      calendarWarnLog(this.baseUrl, this.packageName, "on");
+    } 
     return this.addHandler(type, handler);
   }
 

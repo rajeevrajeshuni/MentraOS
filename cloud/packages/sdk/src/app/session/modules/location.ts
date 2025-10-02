@@ -1,6 +1,6 @@
+import { locationWarnLog } from "src/utils/permissions-utils";
 import { AppSession } from "..";
 import {
-  StreamType,
   AppToCloudMessageType,
   LocationUpdate,
   LocationStreamRequest,
@@ -29,6 +29,9 @@ export class LocationManager {
     },
     handler: (data: LocationUpdate) => void,
   ): () => void {
+    //Checking for permission location from dev console:
+     locationWarnLog(this.session.getHttpsServerUrl() || "", this.session.getPackageName(), this.subscribeToStream.name)
+
     const subscription: LocationStreamRequest = {
       stream: "location_stream",
       rate: options.accuracy,
