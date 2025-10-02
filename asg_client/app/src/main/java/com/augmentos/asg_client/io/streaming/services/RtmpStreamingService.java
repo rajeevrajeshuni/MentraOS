@@ -639,8 +639,21 @@ public class RtmpStreamingService extends Service {
             // Always force a clean stop/start cycle for new stream requests
             if (mStreamState != StreamState.IDLE) {
                 Log.i(TAG, "Stream request received while in state: " + mStreamState + " - forcing clean restart");
+                // Preserve stream ID if we're reconnecting
+                String preservedStreamId = null;
+                if (mReconnecting && mCurrentStreamId != null) {
+                    preservedStreamId = mCurrentStreamId;
+                    Log.d(TAG, "Preserving stream ID during reconnection: " + preservedStreamId);
+                }
+
                 // Force stop and clean up everything
                 forceStopStreamingInternal();
+
+                // Restore stream ID if this was a reconnection
+                if (preservedStreamId != null) {
+                    mCurrentStreamId = preservedStreamId;
+                    Log.d(TAG, "Restored stream ID after cleanup: " + mCurrentStreamId);
+                }
 
                 // Wait a bit for resources to be released
                 try {
@@ -912,6 +925,11 @@ public class RtmpStreamingService extends Service {
                             // Report stream stop failure
                             StreamingReporting.reportStreamStopFailure(RtmpStreamingService.this,
                                 "stream_stop_error", (Throwable) o);
+
+                            // Notify TPA developer of cleanup failure
+                            if (sStatusCallback != null) {
+                                sStatusCallback.onStreamError("Failed to stop stream: " + ((Throwable) o).getMessage());
+                            }
                         }
                         Log.d(TAG, "Stream stop completed");
                     }
@@ -930,6 +948,11 @@ public class RtmpStreamingService extends Service {
                 // Report preview stop failure
                 StreamingReporting.reportPreviewStartFailure(RtmpStreamingService.this,
                     "stop_preview_error", e);
+
+                // Notify TPA developer of cleanup failure
+                if (sStatusCallback != null) {
+                    sStatusCallback.onStreamError("Failed to stop camera preview: " + e.getMessage());
+                }
             }
 
             // Release the streamer completely
@@ -942,6 +965,11 @@ public class RtmpStreamingService extends Service {
                 // Report resource cleanup failure
                 StreamingReporting.reportResourceCleanupFailure(RtmpStreamingService.this,
                     "streamer", "release_error", e);
+
+                // Notify TPA developer of cleanup failure
+                if (sStatusCallback != null) {
+                    sStatusCallback.onStreamError("Failed to release streaming resources: " + e.getMessage());
+                }
             }
 
             mStreamer = null;
@@ -949,6 +977,9 @@ public class RtmpStreamingService extends Service {
 
         // Release surface
         releaseSurface();
+
+        // Save stream ID before clearing it so callback can include it in status
+        String finalStreamId = mCurrentStreamId;
 
         // Update state
         synchronized (mStateLock) {
@@ -969,16 +1000,24 @@ public class RtmpStreamingService extends Service {
 
         // Notify listeners
         updateNotificationIfImportant();
-        
+
         // Turn off LED if it was on
         if (mLedEnabled && mHardwareManager != null && mHardwareManager.supportsRecordingLed()) {
             mHardwareManager.setRecordingLedOff();
             Log.d(TAG, "📹 Recording LED turned OFF (stream stopped)");
         }
-        
+
+        // Temporarily restore stream ID for callback
+        if (finalStreamId != null) {
+            mCurrentStreamId = finalStreamId;
+        }
+
         if (sStatusCallback != null) {
             sStatusCallback.onStreamStopped();
         }
+
+        // Clear it again after callback
+        mCurrentStreamId = null;
         EventBus.getDefault().post(new StreamingEvent.Stopped());
 
         Log.i(TAG, "Streaming stopped and cleaned up");

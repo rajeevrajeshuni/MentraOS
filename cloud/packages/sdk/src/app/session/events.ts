@@ -33,16 +33,8 @@ import {
   Capabilities,
 } from "../../types";
 import { DashboardMode } from "../../types/dashboard";
-import {
-  PermissionError,
-  PermissionErrorDetail,
-  Permission,
-  PackagePermissions,
-} from "../../types/messages/cloud-to-app";
-import { noMicrophoneWarn } from "../../constants/log-messages/warning";
+import { PermissionErrorDetail } from "../../types/messages/cloud-to-app";
 import { microPhoneWarnLog } from "src/utils/permissions-utils";
-
-
 
 /** 🎯 Type-safe event handler function */
 type Handler<T> = (data: T) => void;
