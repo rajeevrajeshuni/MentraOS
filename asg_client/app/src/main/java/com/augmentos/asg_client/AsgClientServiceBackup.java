@@ -241,7 +241,7 @@ public class AsgClientServiceBackup extends Service implements NetworkStateListe
 
         // Initialize settings
         asgSettings = new AsgSettings(this);
-        Log.d(TAG, "Button press mode on startup: " + asgSettings.getButtonPressMode().getValue());
+        Log.d(TAG, "Settings initialized");
 
         // Initialize reporting for this service
         GeneralReporting.reportServiceEvent(this, "AsgClientService", "created");
@@ -2226,10 +2226,8 @@ public class AsgClientServiceBackup extends Service implements NetworkStateListe
 //                    break;
 
                 case "button_mode_setting":
-                    // Handle button mode setting from phone
-                    String mode = dataToProcess.optString("mode", "photo");
-                    Log.d(TAG, "📱 Received button mode setting: " + mode);
-                    asgSettings.setButtonPressMode(mode);
+                    // Button mode setting is deprecated - gallery mode controls capture now
+                    Log.d(TAG, "📱 Received deprecated button_mode_setting - ignoring (gallery mode controls capture)");
                     break;
 
                 default:
@@ -2362,59 +2360,41 @@ public class AsgClientServiceBackup extends Service implements NetworkStateListe
     }
 
     /**
-     * Handle button press based on configured mode
+     * Handle button press with universal forwarding and gallery mode check
+     * Button presses are ALWAYS forwarded to phone/apps
+     * Local capture only happens when camera/gallery app is active
      *
      * @param isLongPress true if this is a long press (video), false for short press (photo)
      */
     private void handleConfigurableButtonPress(boolean isLongPress) {
-        AsgSettings.ButtonPressMode mode = asgSettings.getButtonPressMode();
         String pressType = isLongPress ? "long" : "short";
-        Log.d(TAG, "Handling " + pressType + " button press with mode: " + mode.getValue());
+        Log.d(TAG, "Handling " + pressType + " button press");
 
-        switch (mode) {
-            case PHOTO:
-                // Current behavior - take photo/video only
-                if (isLongPress) {
-                    Log.d(TAG, "📹 Video recording not yet implemented (PHOTO mode, long press)");
-                    // TODO: Implement video recording
-                    // if (mMediaCaptureService != null) {
-                    //     mMediaCaptureService.handleVideoButtonPress();
-                    // }
-                } else {
-                    if (mMediaCaptureService == null) {
-                        Log.d(TAG, "MediaCaptureService is null, initializing");
-                        initializeMediaCaptureService();
-                    }
-                    Log.d(TAG, "📸 Taking photo locally (PHOTO mode, short press)");
-                    mMediaCaptureService.takePhotoLocally();
-                }
-                break;
+        // ALWAYS send button press to phone/apps
+        Log.d(TAG, "📱 Forwarding button press to phone/apps (universal forwarding)");
+        sendButtonPressToPhone(isLongPress);
 
-            case APPS:
-                // Send to apps only
-                Log.d(TAG, "📱 Sending " + pressType + " button press to apps (APPS mode)");
-                sendButtonPressToPhone(isLongPress);
-                break;
-
-            case BOTH:
-                // Both actions
-                Log.d(TAG, "📸📱 Taking media AND sending to apps (BOTH mode, " + pressType + " press)");
-
-                // Take photo/video first
-                if (isLongPress) {
-                    Log.d(TAG, "📹 Video recording not yet implemented (BOTH mode, long press)");
-                    // TODO: Implement video recording
-                } else {
-                    if (mMediaCaptureService == null) {
-                        Log.d(TAG, "MediaCaptureService is null, initializing");
-                        initializeMediaCaptureService();
-                    }
-                    mMediaCaptureService.takePhotoLocally();
-                }
-
-                // Then send to apps
-                sendButtonPressToPhone(isLongPress);
-                break;
+        // Check if camera/gallery app is active for local capture
+        boolean isSaveInGalleryMode = asgSettings.isSaveInGalleryMode();
+        
+        if (!isSaveInGalleryMode) {
+            Log.d(TAG, "📸 Camera app not active - skipping local capture");
+            return;
+        }
+        
+        Log.d(TAG, "📸 Camera app active - proceeding with local capture");
+        
+        // Capture locally
+        if (isLongPress) {
+            Log.d(TAG, "📹 Video recording not yet implemented (long press)");
+            // TODO: Implement video recording
+        } else {
+            if (mMediaCaptureService == null) {
+                Log.d(TAG, "MediaCaptureService is null, initializing");
+                initializeMediaCaptureService();
+            }
+            Log.d(TAG, "📸 Taking photo locally (short press)");
+            mMediaCaptureService.takePhotoLocally();
         }
     }
 
