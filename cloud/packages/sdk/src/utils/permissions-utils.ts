@@ -1,13 +1,14 @@
+// Permission validation utilities - checks if apps have required permissions and displays warnings if missing
 import { noMicrophoneWarn, locationWarn, baackgroundLocationWarn, calendarWarn, readNotficationWarn, postNotficationWarn, cameraWarn } from "src/constants/log-messages/warning";
 import { PackagePermissions, Permission } from "src/types/messages/cloud-to-app";
 
-
+// Check if app has microphone permission, warn if missing
 export const microPhoneWarnLog = (cloudServerUrl: string, packageName: string, funcName?: string) => {
     if (!cloudServerUrl) return;
 
     const permissionsUrl = `${cloudServerUrl}/api/public/permissions/${encodeURIComponent(packageName)}`;
 
-    console.log(`Fetching permissions from: ${permissionsUrl}`);
+    // console.log(`Fetching permissions from: ${permissionsUrl}`);
     fetch(permissionsUrl)
         .then(async res => {
         const contentType = res.headers.get('content-type');
@@ -26,12 +27,10 @@ export const microPhoneWarnLog = (cloudServerUrl: string, packageName: string, f
         })
         .then((data: PackagePermissions | null) => {
             if (data) {
-            console.log("Fetched permissions:", data.permissions);
             const hasMic = data.permissions.some((p: Permission) => p.type === "MICROPHONE");
-            console.log("Has microphone:", hasMic);
 
             if (!hasMic) {
-                console.log(noMicrophoneWarn(funcName, packageName));
+                // console.log(noMicrophoneWarn(funcName, packageName));
             }
             }
         })
@@ -41,6 +40,7 @@ export const microPhoneWarnLog = (cloudServerUrl: string, packageName: string, f
         });
 }
 
+// Check if app has location permission, warn if missing
 export const locationWarnLog = (cloudServerUrl: string, packageName: string, funcName?: string) => {
     if (!cloudServerUrl) return;
 
@@ -67,7 +67,7 @@ export const locationWarnLog = (cloudServerUrl: string, packageName: string, fun
             const hasLocation = data.permissions.some((p: Permission) => p.type === "LOCATION");
 
             if (!hasLocation) {
-                console.log(locationWarn(funcName, packageName));
+                // console.log(locationWarn(funcName, packageName));
             }
             }
         })
@@ -76,6 +76,7 @@ export const locationWarnLog = (cloudServerUrl: string, packageName: string, fun
         });
 }
 
+// Check if app has background location permission, warn if missing
 export const backgroundLocationWarnLog = (cloudServerUrl: string, packageName: string, funcName?: string) => {
     if (!cloudServerUrl) return;
 
@@ -102,7 +103,7 @@ export const backgroundLocationWarnLog = (cloudServerUrl: string, packageName: s
             const hasBackgroundLocation = data.permissions.some((p: Permission) => p.type === "BACKGROUND_LOCATION");
 
             if (!hasBackgroundLocation) {
-                console.log(baackgroundLocationWarn(funcName, packageName));
+                // console.log(baackgroundLocationWarn(funcName, packageName));
             }
             }
         })
@@ -111,6 +112,7 @@ export const backgroundLocationWarnLog = (cloudServerUrl: string, packageName: s
         });
 }
 
+// Check if app has calendar permission, warn if missing
 export const calendarWarnLog = (cloudServerUrl: string, packageName: string, funcName?: string) => {
     if (!cloudServerUrl) return;
 
@@ -137,7 +139,7 @@ export const calendarWarnLog = (cloudServerUrl: string, packageName: string, fun
             const hasCalendar = data.permissions.some((p: Permission) => p.type === "CALENDAR");
 
             if (!hasCalendar) {
-                console.log(calendarWarn(funcName, packageName));
+                // console.log(calendarWarn(funcName, packageName));
             }
             }
         })
@@ -146,6 +148,7 @@ export const calendarWarnLog = (cloudServerUrl: string, packageName: string, fun
         });
 }
 
+// Check if app has read notifications permission, warn if missing
 export const readNotificationWarnLog = (cloudServerUrl: string, packageName: string, funcName?: string) => {
     if (!cloudServerUrl) return;
 
@@ -172,7 +175,7 @@ export const readNotificationWarnLog = (cloudServerUrl: string, packageName: str
             const hasReadNotifications = data.permissions.some((p: Permission) => p.type === "READ_NOTIFICATIONS");
 
             if (!hasReadNotifications) {
-                console.log(readNotficationWarn(funcName, packageName));
+                // console.log(readNotficationWarn(funcName, packageName));
             }
             }
         })
@@ -181,6 +184,7 @@ export const readNotificationWarnLog = (cloudServerUrl: string, packageName: str
         });
 }
 
+// Check if app has post notifications permission, warn if missing
 export const postNotificationWarnLog = (cloudServerUrl: string, packageName: string, funcName?: string) => {
     if (!cloudServerUrl) return;
 
@@ -207,7 +211,7 @@ export const postNotificationWarnLog = (cloudServerUrl: string, packageName: str
             const hasPostNotifications = data.permissions.some((p: Permission) => p.type === "POST_NOTIFICATIONS");
 
             if (!hasPostNotifications) {
-                console.log(postNotficationWarn(funcName, packageName));
+                // console.log(postNotficationWarn(funcName, packageName));
             }
             }
         })
@@ -216,6 +220,7 @@ export const postNotificationWarnLog = (cloudServerUrl: string, packageName: str
         });
 }
 
+// Check if app has camera permission, warn if missing
 export const cameraWarnLog = (cloudServerUrl: string, packageName: string, funcName?: string) => {
     if (!cloudServerUrl) return;
 
@@ -242,7 +247,7 @@ export const cameraWarnLog = (cloudServerUrl: string, packageName: string, funcN
             const hasCamera = data.permissions.some((p: Permission) => p.type === "CAMERA");
 
             if (!hasCamera) {
-                console.log(cameraWarn(funcName, packageName));
+                // console.log(cameraWarn(funcName, packageName));
             }
             }
         })

@@ -15,40 +15,40 @@
  *
  */
 
-export const newSDKUpdate2 = (versionNumb: string): string => {
-  return `
-          ___     
-         /__/:\\        ┬╔╗╔╔═╗╦ ╦  ╦ ╦╔═╗╔╦╗╔═╗╔╦╗╔═╗┬
-        |  |:: \\       │║║║║╣ ║║║  ║ ║╠═╝ ║║╠═╣ ║ ║╣ │
-        |  |:|: \\      o╝╚╝╚═╝╚╩╝  ╚═╝╩  ═╩╝╩ ╩ ╩ ╚═╝o  
-      __|__|:|\\:\\     -------------------------------
-     /__/::::| \\:\\    SDK VERSION V${versionNumb} is out!
-     \\  \\:\\~~\\_\\   -------------------------------
-      \\  \\:\\         npm install @mentra/sdk@latest
-       \\  \\:\\        
-        \\  \\:\\    
-         \\__\\/    
-  `;
+import chalk from 'chalk';
+import boxen from 'boxen';
+import { mentraLogo_1 , newUpdateText} from './logos';
+
+const createUpdateNotification = (versionNumb: string): string => {
+  const line = chalk.bold.gray('-------------------------------');
+  const logo = chalk.cyan(mentraLogo_1);
+  const title = chalk.bold.cyan(newUpdateText);
+  const versionMessage = `Version ${chalk.bold.cyan(`SDK VERSION V${versionNumb} is out! 🎉`)}`;
+  const currentNote = chalk.yellow('You are running an older version');
+  const instructions = chalk.yellow('Update to the latest version with:');
+  const command = chalk.green.bold('bun install @mentra/sdk@latest');
+
+
+  const content = [
+    logo,
+    title,
+    line,
+    versionMessage,
+    currentNote,
+    line,
+    instructions,
+    command,
+  ].join('\n');
+
+  return boxen(content, {
+    padding: 1,
+    margin: 1,
+    borderStyle: 'round',
+    borderColor: 'cyan',
+    textAlignment: 'left',
+  });
 };
 
 export const newSDKUpdate = (versionNumb: string): string => {
-  return `
-
- /$$      /$$ /$$$$$$$$ /$$   /$$ /$$$$$$$$ /$$$$$$$   /$$$$$$ 
-| $$$    /$$$| $$_____/| $$$ | $$|__  $$__/| $$__  $$ /$$__  $$
-| $$$$  /$$$$| $$      | $$$$| $$   | $$   | $$  \ $$|  $$  \  $$
-| $$ $$/$$ $$| $$$$$   | $$ $$ $$   | $$   | $$$$$$$/| $$$$$$$$
-| $$  $$$| $$| $$__/   | $$  $$$$   | $$   | $$__  $$| $$__  $$
-| $$\  $  | $$| $$      | $$\   $$$   | $$   | $$   \ $$| $$  | $$
-| $$ \/   | $$| $$$$$$$$| $$ \   $$   | $$   | $$  | $$| $$  | $$
-|__/     |__/|________/|__/   \__/   |__/   |__/  |__/|__/  |__/
-                                                               
-┬╔╗╔╔═╗╦ ╦  ╦ ╦╔═╗╔╦╗╔═╗╔╦╗╔═╗┬
-│║║║║╣ ║║║  ║ ║╠═╝ ║║╠═╣ ║ ║╣ │                                                               
-o╝╚╝╚═╝╚╩╝  ╚═╝╩  ═╩╝╩ ╩ ╩ ╚═╝o 
-------------------------------- 
-SDK VERSION V${versionNumb} is out!     
-------------------------------- 
-bun install @mentra/sdk@latest   
-  `;
+  return createUpdateNotification(versionNumb);
 };

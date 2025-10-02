@@ -1,7 +1,7 @@
 // Public endpoint: get permissions without auth
 // GET /api/public/permissions/:packageName
 import { Router, Request } from 'express';
-import App from '../../../models/app.model';
+import App from '../../models/app.model';
 
 
 const router = Router();
