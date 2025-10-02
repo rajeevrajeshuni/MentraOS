@@ -1122,7 +1122,6 @@ export class AppManager {
       const appStateChange: AppStateChange = {
         type: CloudToGlassesMessageType.APP_STATE_CHANGE,
         sessionId: this.userSession.sessionId,
-        userSession: clientSessionData,
         timestamp: new Date(),
       };
 
