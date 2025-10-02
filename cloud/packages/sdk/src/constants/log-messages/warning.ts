@@ -1,3 +1,21 @@
+/**
+ * warning.ts
+ *
+ * This file defines styled warning messages that are displayed when an app
+ * attempts to use functionality requiring permissions it hasn't declared.
+ *
+ * Each function generates a bordered terminal warning box with:
+ * - ASCII art logo (left side)
+ * - Permission requirement details (right side)
+ * - Link to developer portal for adding permissions
+ *
+ * The warnings use chalk for terminal colors and boxen for bordered output,
+ * creating a professional side-by-side layout that alerts developers to
+ * missing permissions in their app configuration.
+ *
+ * These are shown during SDK runtime when permission checks fail, helping
+ * developers identify and fix permission issues quickly.
+ */
 import chalk from 'chalk';
 import boxen from 'boxen';
 import { warnLog } from './logos';

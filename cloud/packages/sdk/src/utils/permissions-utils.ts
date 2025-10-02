@@ -1,4 +1,22 @@
-// Permission validation utilities - checks if apps have required permissions and displays warnings if missing
+/**
+ * permissions-utils.ts
+ *
+ * This file provides runtime permission validation utilities for the MentraOS SDK.
+ *
+ * Each function queries the public permissions API endpoint to check if an app
+ * has declared the required permission for a specific feature. If the permission
+ * is missing, a styled warning message is displayed in the terminal.
+ *
+ * Key features:
+ * - Fetches app permissions from /api/public/permissions/:packageName
+ * - Gracefully handles offline/unreachable endpoints (silent failure)
+ * - Displays professional bordered warnings when permissions are missing
+ * - Non-blocking - allows app execution to continue even if checks fail
+ *
+ * These functions are called automatically by SDK methods that require specific
+ * permissions (e.g., microphone access, location tracking, camera, etc.) to help
+ * developers identify missing permission declarations during development.
+ */
 import { noMicrophoneWarn, locationWarn, baackgroundLocationWarn, calendarWarn, readNotficationWarn, postNotficationWarn, cameraWarn } from "src/constants/log-messages/warning";
 import { PackagePermissions, Permission } from "src/types/messages/cloud-to-app";
 
