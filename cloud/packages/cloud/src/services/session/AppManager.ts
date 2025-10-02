@@ -726,8 +726,8 @@ export class AppManager {
         );
       } catch (webhookError) {
         this.logger.error(
-          {webhookError}, `Error triggering stop webhook for ${packageName}:`,
-          
+          { webhookError },
+          `Error triggering stop webhook for ${packageName}:`,
         );
       }
 
@@ -746,8 +746,8 @@ export class AppManager {
         }
       } catch (error) {
         this.logger.error(
-          {error}, `Error removing subscriptions for ${packageName}:`,
-          
+          { error },
+          `Error removing subscriptions for ${packageName}`,
         );
       }
 
@@ -829,7 +829,7 @@ export class AppManager {
 
       this.updateAppLastActive(packageName);
     } catch (error) {
-      this.logger.error({error}, `Error stopping app ${packageName}:`);
+      this.logger.error({ error }, `Error stopping app ${packageName}:`);
     }
   }
 
@@ -893,8 +893,8 @@ export class AppManager {
           ws.close(1008, "Invalid API key");
         } catch (sendError) {
           this.logger.error(
-            {sendError}, `Error sending auth error to App ${packageName}:`,
-            
+            { sendError },
+            `Error sending auth error to App ${packageName}:`,
           );
         }
 
@@ -933,7 +933,8 @@ export class AppManager {
           );
         } catch (sendError) {
           this.logger.error(
-            {sendError}, `Error sending app not started error to App ${packageName}:`,
+            { sendError },
+            `Error sending app not started error to App ${packageName}:`,
           );
         }
         ws.close(1008, "App not started for this session");
@@ -1096,7 +1097,10 @@ export class AppManager {
 
         ws.close(1011, "Internal server error");
       } catch (sendError) {
-        this.logger.error({sendError}, `Error sending internal error to App:`);
+        this.logger.error(
+          { sendError },
+          `Error sending internal error to App:`,
+        );
       }
     }
   }
@@ -1174,7 +1178,7 @@ export class AppManager {
 
       this.logger.info(`Updated installed apps for ${this.userSession.userId}`);
     } catch (error) {
-      this.logger.error({error}, `Error refreshing installed apps:`, );
+      this.logger.error({ error }, `Error refreshing installed apps:`);
     }
   }
 
@@ -1223,7 +1227,8 @@ export class AppManager {
             startedApps.push(packageName);
           } catch (error) {
             logger.error(
-              {error}, `Error starting previously running app ${packageName}:`,
+              { error },
+              `Error starting previously running app ${packageName}:`,
             );
             // Continue with other apps
           }
@@ -1234,7 +1239,7 @@ export class AppManager {
         `Started ${startedApps.length}/${previouslyRunningApps.length} previously running apps for ${this.userSession.userId}`,
       );
     } catch (error) {
-      logger.error({error}, `Error starting previously running apps:` );
+      logger.error({ error }, `Error starting previously running apps:`);
     }
   }
 

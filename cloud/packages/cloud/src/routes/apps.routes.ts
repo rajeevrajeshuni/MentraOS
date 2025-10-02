@@ -234,7 +234,7 @@ async function getSessionFromToken(coreToken: string) {
     const userSession = UserSession.getById(userId) || null;
     return userSession;
   } catch (error) {
-    logger.error({error}, "Error verifying token or finding session:", error);
+    logger.error(error, "Error verifying token or finding session:");
     return null;
   }
 }
@@ -256,7 +256,7 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
 
     return userId;
   } catch (error) {
-    logger.error({error}, "Error verifying token:");
+    logger.error(error, "Error verifying token:");
     return null;
   }
 }
@@ -553,7 +553,7 @@ async function searchApps(req: Request, res: Response) {
       data: searchResults,
     });
   } catch (error) {
-    logger.error({error}, "Error searching apps:" );
+    logger.error(error, "Error searching apps:");
     res.status(500).json({
       success: false,
       message: "Error searching apps",
@@ -1253,7 +1253,7 @@ async function uninstallApp(req: Request, res: Response) {
         );
       }
     } catch (error) {
-      logger.warn({error}, "Error stopping app during uninstall:", error);
+      logger.warn(error, "Error stopping app during uninstall:");
     }
   } catch (error) {
     logger.error(
@@ -1331,7 +1331,7 @@ async function getInstalledApps(req: Request, res: Response) {
       data: validApps,
     });
   } catch (error) {
-    logger.error({error}, "Error fetching installed apps:", error);
+    logger.error(error, "Error fetching installed apps:");
     res.status(500).json({
       success: false,
       message: "Error fetching installed apps",
@@ -1388,7 +1388,7 @@ async function getAvailableApps(req: Request, res: Response) {
             installedSet.add(inst.packageName);
           }
         }
-      } catch (_e) {
+      } catch {
         // ignore
       }
 
@@ -1415,7 +1415,7 @@ async function getAvailableApps(req: Request, res: Response) {
       data: enhancedApps,
     });
   } catch (error) {
-    logger.error({error}, "Error fetching available apps:" );
+    logger.error(error, "Error fetching available apps:");
     res.status(500).json({
       success: false,
       message: "Failed to fetch available apps",
@@ -1469,7 +1469,7 @@ async function batchEnrichAppsWithProfiles(
     if (app.organizationId) {
       try {
         orgIdSet.add(String(app.organizationId));
-      } catch (_e) {
+      } catch {
         // ignore malformed ids
       }
     } else if (app.developerId) {
