@@ -180,7 +180,6 @@ public class AsgClientServiceManager {
         try {
             asgSettings = new AsgSettings(context);
             Log.d(TAG, "✅ Settings initialized successfully");
-            Log.d(TAG, "📋 Button press mode on startup: " + asgSettings.getButtonPressMode().getValue());
         } catch (Exception e) {
             Log.e(TAG, "💥 Error initializing settings", e);
             throw e;
