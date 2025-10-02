@@ -1,6 +1,6 @@
 import {createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef, useMemo} from "react"
-import {Platform} from "react-native"
 import {useAuth} from "@/contexts/AuthContext"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {deepCompare} from "@/utils/debugging"
 import showAlert from "@/utils/AlertUtils"
@@ -28,6 +28,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
   const [appStatus, setAppStatus] = useState<AppletInterface[]>([])
   const {user} = useAuth()
   const {theme} = useAppTheme()
+  const {status} = useCoreStatus()
 
   // Keep track of active operations to prevent race conditions
   const pendingOperations = useRef<{[packageName: string]: "start" | "stop"}>({})
@@ -57,6 +58,9 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     try {
       const appsData = await restComms.getApps()
 
+      // Load camera app state from AsyncStorage ONCE before mapping
+      const savedCameraAppState = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.camera_app_running)
+
       // Merge existing running states with new data
       const mapped = appsData.map(app => {
         // shallow incomplete copy, just enough to render the list:
@@ -82,17 +86,47 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       })
 
       // Add offline apps to the beginning of the list
-      const offlineApps = getOfflineApps()
-      const appsWithOffline = [...offlineApps, ...mapped]
+      const appsWithOffline = [...getOfflineApps(), ...mapped]
 
       setAppStatus(currentAppStatus => {
-        const diff = deepCompare(currentAppStatus, appsWithOffline)
+        // Preserve running state from current appStatus for offline apps
+        const offlineAppsWithState = appsWithOffline.map(app => {
+          // Check if this is an offline app
+          if (isOfflineAppPackage(app.packageName)) {
+            // Find existing state for this offline app
+            const existingApp = currentAppStatus.find((a: AppletInterface) => a.packageName === app.packageName)
+
+            // Preserve is_running and loading state if app was already in state
+            if (existingApp) {
+              return {
+                ...app,
+                is_running: existingApp.is_running,
+                loading: existingApp.loading,
+              }
+            }
+
+            // No existing state - restore from AsyncStorage for camera app
+            if (app.packageName === "com.augmentos.camera") {
+              console.log("Restoring camera app state from AsyncStorage:", savedCameraAppState)
+              return {
+                ...app,
+                is_running: savedCameraAppState ?? false,
+                loading: false,
+              }
+            }
+          }
+
+          // Not an offline app or no existing state, return as-is
+          return app
+        })
+
+        const diff = deepCompare(currentAppStatus, offlineAppsWithState)
         if (diff.length === 0) {
           console.log("AppStatusProvider: Applet status did not change")
           //console.log(JSON.stringify(currentAppStatus, null, 2));
           return currentAppStatus
         }
-        return appsWithOffline
+        return offlineAppsWithState
       })
     } catch (err) {
       console.error("AppStatusProvider: Error fetching apps:", err)
@@ -107,6 +141,13 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       setAppStatus(currentStatus =>
         currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: true, loading: false} : app)),
       )
+
+      // Persist camera app state to AsyncStorage
+      if (packageName === "com.augmentos.camera") {
+        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, true)
+        console.log("Camera app state persisted to AsyncStorage: true")
+      }
+
       return
     }
 
@@ -232,6 +273,13 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       setAppStatus(currentStatus =>
         currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: false, loading: false} : app)),
       )
+
+      // Persist camera app state to AsyncStorage
+      if (packageName === "com.augmentos.camera") {
+        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, false)
+        console.log("Camera app state persisted to AsyncStorage: false")
+      }
+
       return
     }
 
@@ -318,8 +366,6 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Watch camera app state and send gallery mode updates to glasses (Android only)
   useEffect(() => {
-    if (Platform.OS !== "android") return
-
     const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
 
     if (cameraApp) {
@@ -328,6 +374,22 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       bridge.sendGalleryModeActive(isRunning)
     }
   }, [appStatus])
+
+  // Re-send camera app state when glasses connect/reconnect (Android only)
+  useEffect(() => {
+    const glassesModelName = status.glasses_info?.model_name
+
+    if (glassesModelName) {
+      // Glasses just connected - re-send current camera app state
+      console.log(`Glasses connected (${glassesModelName}) - re-syncing camera app state`)
+
+      const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+      const isRunning = cameraApp?.is_running ?? false
+
+      console.log(`Re-sending gallery mode state on connection: ${isRunning}`)
+      bridge.sendGalleryModeActive(isRunning)
+    }
+  }, [status.glasses_info?.model_name]) // Triggers when glasses connect/disconnect
 
   return (
     <AppStatusContext.Provider
