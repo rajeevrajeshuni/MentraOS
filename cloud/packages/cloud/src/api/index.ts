@@ -4,8 +4,7 @@ import type { Application } from "express";
 import userSettingsApi from "./client/user-settings.api";
 import feedbackApi from "./client/feedback.api";
 import minVersionApi from "./client/min-version.api";
-import simpleStorageApi from "./sdk/simple-storage.api";
-import sdkVersionApi from "./sdk/sdk-version.api";
+
 
 // Legacy route modules (to be migrated gradually)
 import appRoutes from "../routes/apps.routes";

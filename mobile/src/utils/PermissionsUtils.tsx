@@ -4,10 +4,7 @@ import {
   request,
   check,
   PERMISSIONS,
-  Permission,
   RESULTS,
-  requestNotifications,
-  checkNotifications,
 } from "react-native-permissions"
 import {PermissionsAndroid} from "react-native"
 import {
