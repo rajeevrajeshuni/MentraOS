@@ -140,13 +140,17 @@ export class EventManager {
 
   // Convenience handlers for common event types
 
-onTranscription(handler: Handler<TranscriptionData>) {
-  // Only make the API call if we have a base URL (server-side environment)
-  console.log("Doing warning check...")
-  microPhoneWarnLog(this.baseUrl, this.packageName, this.onTranscription.name);
+  onTranscription(handler: Handler<TranscriptionData>) {
+    // Only make the API call if we have a base URL (server-side environment)
+    console.log("Doing warning check...");
+    microPhoneWarnLog(
+      this.baseUrl,
+      this.packageName,
+      this.onTranscription.name,
+    );
 
-  return this.addHandler(createTranscriptionStream("en-US"), handler);
-}
+    return this.addHandler(createTranscriptionStream("en-US"), handler);
+  }
 
   /**
    * 🎤 Listen for transcription events in a specific language
@@ -189,7 +193,11 @@ onTranscription(handler: Handler<TranscriptionData>) {
     targetLanguage: string,
     handler: Handler<TranslationData>,
   ): () => void {
-    microPhoneWarnLog(this.baseUrl || "", this.packageName, this.ontranslationForLanguage.name);
+    microPhoneWarnLog(
+      this.baseUrl || "",
+      this.packageName,
+      this.ontranslationForLanguage.name,
+    );
     if (!isValidLanguageCode(sourceLanguage)) {
       throw new Error(`Invalid source language code: ${sourceLanguage}`);
     }
@@ -232,7 +240,11 @@ onTranscription(handler: Handler<TranscriptionData>) {
   }
 
   onVoiceActivity(handler: Handler<Vad>) {
-    microPhoneWarnLog(this.baseUrl || "", this.packageName, this.onVoiceActivity.name); 
+    microPhoneWarnLog(
+      this.baseUrl || "",
+      this.packageName,
+      this.onVoiceActivity.name,
+    );
     return this.addHandler(StreamType.VAD, handler);
   }
 
@@ -381,7 +393,7 @@ onTranscription(handler: Handler<TranscriptionData>) {
     // Check permissions for specific stream types
     if (type === StreamType.CALENDAR_EVENT) {
       calendarWarnLog(this.baseUrl, this.packageName, "on");
-    } 
+    }
     return this.addHandler(type, handler);
   }
 

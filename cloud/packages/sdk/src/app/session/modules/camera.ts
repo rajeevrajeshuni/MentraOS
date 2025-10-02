@@ -426,8 +426,11 @@ export class CameraModule {
       `📹 RTMP stream request starting`,
     );
 
-    cameraWarnLog(this.session.getHttpsServerUrl?.(), this.packageName, "startStream");
-
+    cameraWarnLog(
+      this.session.getHttpsServerUrl?.(),
+      this.packageName,
+      "startStream",
+    );
 
     if (!options.rtmpUrl) {
       throw new Error("rtmpUrl is required");

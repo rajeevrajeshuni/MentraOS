@@ -15,19 +15,18 @@
  *
  */
 
-import chalk from 'chalk';
-import boxen from 'boxen';
-import { mentraLogo_1 , newUpdateText} from './logos';
+import chalk from "chalk";
+import boxen from "boxen";
+import { mentraLogo_1, newUpdateText } from "./logos";
 
 const createUpdateNotification = (versionNumb: string): string => {
-  const line = chalk.bold.gray('-------------------------------');
+  const line = chalk.bold.gray("-------------------------------");
   const logo = chalk.cyan(mentraLogo_1);
   const title = chalk.bold.cyan(newUpdateText);
   const versionMessage = `Version ${chalk.bold.cyan(`SDK VERSION V${versionNumb} is out! 🎉`)}`;
-  const currentNote = chalk.yellow('You are running an older version');
-  const instructions = chalk.yellow('Update to the latest version with:');
-  const command = chalk.green.bold('bun install @mentra/sdk@latest');
-
+  const currentNote = chalk.yellow("You are running an older version");
+  const instructions = chalk.yellow("Update to the latest version with:");
+  const command = chalk.green.bold("bun install @mentra/sdk@latest");
 
   const content = [
     logo,
@@ -38,14 +37,14 @@ const createUpdateNotification = (versionNumb: string): string => {
     line,
     instructions,
     command,
-  ].join('\n');
+  ].join("\n");
 
   return boxen(content, {
     padding: 1,
     margin: 1,
-    borderStyle: 'round',
-    borderColor: 'cyan',
-    textAlignment: 'left',
+    borderStyle: "round",
+    borderColor: "cyan",
+    textAlignment: "left",
   });
 };
 

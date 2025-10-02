@@ -293,12 +293,12 @@ export class AppServer {
             const cloudHost = "api.mentra.glass";
             const response = await axios.get(
               `https://${cloudHost}/api/sdk/version`,
-              { timeout: 3000 } // 3 second timeout
+              { timeout: 3000 }, // 3 second timeout
             );
             if (response.data && response.data.success && response.data.data) {
               latest = response.data.data.latest;
             }
-          } catch (fetchError) {
+          } catch {
             this.logger.debug(
               "Failed to fetch latest SDK version - skipping version check (offline or API unavailable)",
             );

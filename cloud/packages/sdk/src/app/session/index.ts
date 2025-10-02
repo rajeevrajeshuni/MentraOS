@@ -446,7 +446,11 @@ export class AppSession {
    * @deprecated Use session.events.onPhoneNotifications() instead
    */
   onPhoneNotifications(handler: (data: PhoneNotification) => void): () => void {
-    readNotificationWarnLog(this.getHttpsServerUrl() || "", this.getPackageName(), "onPhoneNotifications");
+    readNotificationWarnLog(
+      this.getHttpsServerUrl() || "",
+      this.getPackageName(),
+      "onPhoneNotifications",
+    );
     return this.events.onPhoneNotifications(handler);
   }
 
