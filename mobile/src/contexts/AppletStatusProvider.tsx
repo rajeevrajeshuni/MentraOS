@@ -1,4 +1,5 @@
 import {createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef, useMemo} from "react"
+import {Platform} from "react-native"
 import {useAuth} from "@/contexts/AuthContext"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {deepCompare} from "@/utils/debugging"
@@ -7,67 +8,9 @@ import {translate} from "@/i18n"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-
-export type AppPermissionType =
-  | "ALL"
-  | "MICROPHONE"
-  | "CAMERA"
-  | "CALENDAR"
-  | "LOCATION"
-  | "BACKGROUND_LOCATION"
-  | "READ_NOTIFICATIONS"
-  | "POST_NOTIFICATIONS"
-export interface AppletPermission {
-  description: string
-  type: AppPermissionType
-  required?: boolean
-}
-
-// Define the AppInterface based on AppI from SDK
-export interface AppletInterface {
-  packageName: string
-  name: string
-  developerName?: string
-  publicUrl?: string
-  isSystemApp?: boolean
-  uninstallable?: boolean
-  webviewURL?: string
-  logoURL: string
-  type: string // "standard", "background"
-  appStoreId?: string
-  developerId?: string
-  hashedEndpointSecret?: string
-  hashedApiKey?: string
-  description?: string
-  version?: string
-  settings?: Record<string, unknown>
-  isPublic?: boolean
-  appStoreStatus?: "DEVELOPMENT" | "SUBMITTED" | "REJECTED" | "PUBLISHED"
-  developerProfile?: {
-    company?: string
-    website?: string
-    contactEmail?: string
-    description?: string
-    logo?: string
-  }
-  permissions: AppletPermission[]
-  is_running?: boolean
-  loading?: boolean
-  compatibility?: {
-    isCompatible: boolean
-    missingRequired: Array<{
-      type: string
-      description?: string
-    }>
-    missingOptional: Array<{
-      type: string
-      description?: string
-    }>
-    message: string
-  }
-  // New optional isOnline from backend
-  isOnline?: boolean | null
-}
+import {AppletInterface} from "@/types/AppletTypes"
+import {getOfflineApps, isOfflineAppPackage} from "@/types/OfflineApps"
+import bridge from "@/bridge/MantleBridge"
 
 interface AppStatusContextType {
   appStatus: AppletInterface[]
@@ -138,14 +81,18 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
         return applet
       })
 
+      // Add offline apps to the beginning of the list
+      const offlineApps = getOfflineApps()
+      const appsWithOffline = [...offlineApps, ...mapped]
+
       setAppStatus(currentAppStatus => {
-        const diff = deepCompare(currentAppStatus, mapped)
+        const diff = deepCompare(currentAppStatus, appsWithOffline)
         if (diff.length === 0) {
           console.log("AppStatusProvider: Applet status did not change")
           //console.log(JSON.stringify(currentAppStatus, null, 2));
           return currentAppStatus
         }
-        return mapped
+        return appsWithOffline
       })
     } catch (err) {
       console.error("AppStatusProvider: Error fetching apps:", err)
@@ -154,6 +101,15 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Optimistically update app status when starting an app
   const optimisticallyStartApp = async (packageName: string, appType?: string) => {
+    // Check if this is an offline app first
+    if (isOfflineAppPackage(packageName)) {
+      console.log("Starting offline app:", packageName)
+      setAppStatus(currentStatus =>
+        currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: true, loading: false} : app)),
+      )
+      return
+    }
+
     // Cancel any pending stop operation for this app
     if (pendingOperations.current[packageName] === "stop") {
       delete pendingOperations.current[packageName]
@@ -173,6 +129,12 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
       for (const runningApp of runningStandardApps) {
         optimisticallyStopApp(runningApp.packageName)
+        // Skip offline apps - they don't need server communication
+        if (isOfflineAppPackage(runningApp.packageName)) {
+          console.log("Skipping offline app in foreground switch:", runningApp.packageName)
+          clearPendingOperation(runningApp.packageName)
+          continue
+        }
         try {
           restComms.stopApp(runningApp.packageName)
           clearPendingOperation(runningApp.packageName)
@@ -247,6 +209,11 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     try {
       const runningApps = appStatus.filter(app => app.is_running)
       for (const app of runningApps) {
+        // Skip offline apps - they don't need server communication
+        if (isOfflineAppPackage(app.packageName)) {
+          console.log("Skipping offline app in stopAllApps:", app.packageName)
+          continue
+        }
         await restComms.stopApp(app.packageName)
       }
       // Update local state to reflect all apps are stopped
@@ -259,6 +226,15 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Optimistically update app status when stopping an app
   const optimisticallyStopApp = async (packageName: string) => {
+    // Check if this is an offline app first
+    if (isOfflineAppPackage(packageName)) {
+      console.log("Stopping offline app:", packageName)
+      setAppStatus(currentStatus =>
+        currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: false, loading: false} : app)),
+      )
+      return
+    }
+
     // Cancel any pending start operation for this app
     if (pendingOperations.current[packageName] === "start") {
       delete pendingOperations.current[packageName]
@@ -339,6 +315,19 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     }, 2000)
     return () => clearInterval(interval)
   }, [appStatus.length])
+
+  // Watch camera app state and send gallery mode updates to glasses (Android only)
+  useEffect(() => {
+    if (Platform.OS !== "android") return
+
+    const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+
+    if (cameraApp) {
+      const isRunning = cameraApp.is_running ?? false
+      console.log(`Camera app state changed: is_running = ${isRunning}`)
+      bridge.sendGalleryModeActive(isRunning)
+    }
+  }, [appStatus])
 
   return (
     <AppStatusContext.Provider
