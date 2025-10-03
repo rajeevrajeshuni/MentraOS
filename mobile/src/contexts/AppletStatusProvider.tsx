@@ -11,6 +11,7 @@ import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {AppletInterface} from "@/types/AppletTypes"
 import {getOfflineApps, isOfflineAppPackage} from "@/types/OfflineApps"
 import bridge from "@/bridge/MantleBridge"
+import {hasCamera} from "@/config/glassesFeatures"
 
 interface AppStatusContextType {
   appStatus: AppletInterface[]
@@ -375,7 +376,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     }
   }, [appStatus])
 
-  // Re-send camera app state when glasses connect/reconnect (Android only)
+  // Re-send camera app state when glasses connect/reconnect
   useEffect(() => {
     const glassesModelName = status.glasses_info?.model_name
 
@@ -388,6 +389,18 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
       console.log(`Re-sending gallery mode state on connection: ${isRunning}`)
       bridge.sendGalleryModeActive(isRunning)
+
+      // Auto-start camera app when glasses with camera capability connect
+      if (hasCamera(glassesModelName)) {
+        const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+
+        if (cameraApp && !cameraApp.is_running) {
+          console.log(`📸 Glasses with camera connected (${glassesModelName}) - auto-starting camera app`)
+          optimisticallyStartApp("com.augmentos.camera", "offline")
+        } else {
+          console.log("📸 Camera app already running or not found")
+        }
+      }
     }
   }, [status.glasses_info?.model_name]) // Triggers when glasses connect/disconnect
 
