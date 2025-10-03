@@ -4,6 +4,7 @@ import {View, TouchableOpacity, Animated, Platform, ViewStyle, TextStyle, Easing
 import {Text} from "@/components/ignite"
 import {useFocusEffect} from "@react-navigation/native"
 import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import showAlert from "@/utils/AlertUtils"
@@ -31,8 +32,13 @@ export default function InactiveAppList({
   onClearSearch?: () => void
 }) {
   const {appStatus, optimisticallyStartApp} = useAppStatus()
+  const {status: _status} = useCoreStatus()
+  const [_onboardingModalVisible, _setOnboardingModalVisible] = useState(false)
   const [onboardingCompleted, setOnboardingCompleted] = useState(true)
+  const [_inLiveCaptionsPhase, _setInLiveCaptionsPhase] = useState(false)
+  const [_showSettingsHint, _setShowSettingsHint] = useState(false)
   const [showOnboardingTip, setShowOnboardingTip] = useState(false)
+  const [_isLoading, _setIsLoading] = useState(true)
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
 
@@ -40,10 +46,15 @@ export default function InactiveAppList({
   const bounceAnim = useRef(new Animated.Value(0)).current
   const pulseAnim = useRef(new Animated.Value(0)).current
 
+  const [_containerWidth, _setContainerWidth] = useState(0)
+
   // Reference for the Live Captions list item (use provided ref or create new one)
   const internalLiveCaptionsRef = useRef<any>(null)
   const actualLiveCaptionsRef = liveCaptionsRef || internalLiveCaptionsRef
 
+  // Constants for grid item sizing
+  const _GRID_MARGIN = 6 // Total horizontal margin per item (left + right)
+  const _numColumns = 4 // Desired number of columns
   // Calculate the item width based on container width and margins
 
   // console.log('%%% appStatus', appStatus);
@@ -168,6 +179,7 @@ export default function InactiveAppList({
 
     // If the app appears offline, confirm before proceeding
     if (appInfo.isOnline === false) {
+      const _developerName = (" " + (appInfo.developerName || "") + " ").replace("  ", " ")
       const shouldProceed = await new Promise<boolean>(resolve => {
         showAlert(
           `${appInfo.name} can't be reached`,
@@ -430,7 +442,7 @@ const $noAppsText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $clearSearchButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.primary400,
+  backgroundColor: colors.primary,
   paddingHorizontal: spacing.lg,
   paddingVertical: spacing.sm,
   borderRadius: 8,
