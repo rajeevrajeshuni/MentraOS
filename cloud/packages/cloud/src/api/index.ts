@@ -74,7 +74,6 @@ export function registerApi(app: Application) {
   app.use("/api/hardware", hardwareRoutes);
 
   // HTTP routes for augmentOS settings are now replaced by WebSocket implementation
-  // app.use('/api/augmentos-settings', augmentosSettingsRoutes);
   app.use(errorReportRoutes);
   app.use(transcriptRoutes);
   app.use(audioRoutes);
