@@ -460,7 +460,7 @@ async function getAllApps(req: Request, res: Response) {
       data: finalApps,
     });
   } catch (error) {
-    logger.error({ error }, "Error fetching apps");
+    logger.error(error, "Error fetching apps");
     res.status(500).json({
       success: false,
       message: "Error fetching apps",
@@ -491,7 +491,7 @@ async function getPublicApps(req: Request, res: Response) {
       data: apps,
     });
   } catch (error) {
-    logger.error({ error }, "Error fetching public apps");
+    logger.error(error, "Error fetching public apps");
     res.status(500).json({
       success: false,
       message: "Error fetching public apps",
@@ -652,7 +652,7 @@ async function getAppByPackage(req: Request, res: Response) {
       data: appObj,
     });
   } catch (error) {
-    logger.error({ error }, "Error fetching app");
+    logger.error(error, "Error fetching app");
     res.status(500).json({
       success: false,
       message: "Error fetching app",

@@ -746,7 +746,7 @@ export class AppManager {
         }
       } catch (error) {
         this.logger.error(
-          { error },
+          error,
           `Error removing subscriptions for ${packageName}`,
         );
       }
@@ -769,7 +769,7 @@ export class AppManager {
           appWebsocket.close(1000, "App stopped");
         } catch (error) {
           this.logger.error(
-            { error },
+            error,
             `Error closing connection for ${packageName}`,
           );
         }
@@ -783,7 +783,7 @@ export class AppManager {
         }
       } catch (error) {
         this.userSession.logger.error(
-          { error },
+          error,
           `Error updating user's running apps`,
         );
       }
@@ -829,7 +829,7 @@ export class AppManager {
 
       this.updateAppLastActive(packageName);
     } catch (error) {
-      this.logger.error({ error }, `Error stopping app ${packageName}:`);
+      this.logger.error(error, `Error stopping app ${packageName}:`);
     }
   }
 
@@ -1178,7 +1178,7 @@ export class AppManager {
 
       this.logger.info(`Updated installed apps for ${this.userSession.userId}`);
     } catch (error) {
-      this.logger.error({ error }, `Error refreshing installed apps:`);
+      this.logger.error(error, `Error refreshing installed apps:`);
     }
   }
 
@@ -1227,7 +1227,7 @@ export class AppManager {
             startedApps.push(packageName);
           } catch (error) {
             logger.error(
-              { error },
+              error,
               `Error starting previously running app ${packageName}:`,
             );
             // Continue with other apps
@@ -1239,7 +1239,7 @@ export class AppManager {
         `Started ${startedApps.length}/${previouslyRunningApps.length} previously running apps for ${this.userSession.userId}`,
       );
     } catch (error) {
-      logger.error({ error }, `Error starting previously running apps:`);
+      logger.error(error, `Error starting previously running apps:`);
     }
   }
 
@@ -1604,7 +1604,7 @@ export class AppManager {
       this.userSession.loadingApps.clear();
     } catch (error) {
       this.logger.error(
-        { error },
+        error,
         `Error disposing AppManager for ${this.userSession.userId}`,
       );
     }

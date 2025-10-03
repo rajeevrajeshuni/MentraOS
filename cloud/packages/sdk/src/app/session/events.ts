@@ -142,7 +142,6 @@ export class EventManager {
 
   onTranscription(handler: Handler<TranscriptionData>) {
     // Only make the API call if we have a base URL (server-side environment)
-    console.log("Doing warning check...");
     microPhoneWarnLog(
       this.baseUrl,
       this.packageName,
