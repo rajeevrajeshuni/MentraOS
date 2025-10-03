@@ -1,7 +1,7 @@
 # API + Services Refactor Plan
 
 Author: Isaiah
-Status: Draft (working notes)
+Status: Draft (working notes).
 
 ## Overview
 
