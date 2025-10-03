@@ -418,8 +418,11 @@ export class MantleBridge extends EventEmitter {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          // socketComms.sendBinary(bytes)
-          livekitManager.addPcm(bytes)
+          if (livekitManager.isRoomConnected()) {
+            livekitManager.addPcm(bytes)
+          } else {
+            socketComms.sendBinary(bytes)
+          }
           break
         case "rtmp_stream_status":
           console.log("MantleBridge: Forwarding RTMP stream status to server:", data)
