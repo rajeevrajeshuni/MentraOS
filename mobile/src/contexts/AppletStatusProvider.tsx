@@ -401,6 +401,14 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
           console.log("📸 Camera app already running or not found")
         }
       }
+    } else {
+      // Glasses disconnected - auto-close camera app
+      const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+
+      if (cameraApp && cameraApp.is_running) {
+        console.log("📸 Glasses disconnected - auto-stopping camera app")
+        optimisticallyStopApp("com.augmentos.camera")
+      }
     }
   }, [status.glasses_info?.model_name]) // Triggers when glasses connect/disconnect
 
