@@ -29,10 +29,45 @@ export const OFFLINE_APPS: AppletInterface[] = [
 ]
 
 /**
- * Get all offline apps
+ * Get all offline apps with dynamic compatibility based on connected glasses
  */
-export const getOfflineApps = (): AppletInterface[] => {
-  return OFFLINE_APPS
+export const getOfflineApps = (glassesModelName?: string | null): AppletInterface[] => {
+  return OFFLINE_APPS.map(app => {
+    // Camera app requires camera-capable glasses to be connected
+    if (app.packageName === "com.augmentos.camera") {
+      // No glasses connected - incompatible
+      if (!glassesModelName) {
+        return {
+          ...app,
+          compatibility: {
+            isCompatible: false,
+            missingRequired: [{type: "camera", available: false}],
+            missingOptional: [],
+            message: "Camera app requires glasses with a camera to be connected.",
+          },
+        }
+      }
+
+      // Glasses connected - check if they have camera capability
+      const {hasCamera} = require("@/config/glassesFeatures")
+      const hasGlassesCamera = hasCamera(glassesModelName)
+
+      if (!hasGlassesCamera) {
+        // Mark as incompatible if glasses don't have camera
+        return {
+          ...app,
+          compatibility: {
+            isCompatible: false,
+            missingRequired: [{type: "camera", available: false}],
+            missingOptional: [],
+            message: `Camera app requires glasses with a camera. ${glassesModelName} does not have a camera.`,
+          },
+        }
+      }
+    }
+
+    return app
+  })
 }
 
 /**

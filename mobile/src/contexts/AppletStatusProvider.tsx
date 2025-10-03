@@ -86,8 +86,8 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
         return applet
       })
 
-      // Add offline apps to the beginning of the list
-      const appsWithOffline = [...getOfflineApps(), ...mapped]
+      // Add offline apps to the beginning of the list (with compatibility check)
+      const appsWithOffline = [...getOfflineApps(status.glasses_info?.model_name), ...mapped]
 
       setAppStatus(currentAppStatus => {
         // Preserve running state from current appStatus for offline apps
@@ -402,13 +402,17 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
         }
       }
     } else {
-      // Glasses disconnected - auto-close camera app
+      // Glasses disconnected - auto-close camera app and refresh to update compatibility
       const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
 
       if (cameraApp && cameraApp.is_running) {
         console.log("📸 Glasses disconnected - auto-stopping camera app")
         optimisticallyStopApp("com.augmentos.camera")
       }
+
+      // Refresh app status to re-evaluate compatibility (camera app will show as incompatible or hidden)
+      console.log("📸 Refreshing app status after glasses disconnect to update compatibility")
+      refreshAppStatus()
     }
   }, [status.glasses_info?.model_name]) // Triggers when glasses connect/disconnect
 
