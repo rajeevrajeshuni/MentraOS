@@ -390,6 +390,10 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       console.log(`Re-sending gallery mode state on connection: ${isRunning}`)
       bridge.sendGalleryModeActive(isRunning)
 
+      // Refresh app status to update compatibility (camera app will show as compatible if glasses have camera)
+      console.log("📸 Refreshing app status after glasses connect to update compatibility")
+      refreshAppStatus()
+
       // Auto-start camera app when glasses with camera capability connect
       if (hasCamera(glassesModelName)) {
         const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
