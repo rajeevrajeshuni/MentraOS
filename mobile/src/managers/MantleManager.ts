@@ -56,7 +56,7 @@ class MantleManager {
     } catch (e) {
       console.error(`Failed to get settings from server: ${e}`)
     }
-    bridge.updateSettings(await useSettingsStore.getState().getCoreSettings()) // send settings to core
+    await bridge.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
     this.setupPeriodicTasks()
   }
 

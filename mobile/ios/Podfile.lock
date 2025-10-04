@@ -45,6 +45,9 @@ PODS:
     - ExpoModulesCore
   - ExpoLocation (18.0.10):
     - ExpoModulesCore
+  - ExpoMediaLibrary (17.0.6):
+    - ExpoModulesCore
+    - React-Core
   - ExpoModulesCore (2.2.3):
     - DoubleConversion
     - glog
@@ -1455,7 +1458,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-keyboard-controller (1.18.2):
+  - react-native-keyboard-controller (1.17.5):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1468,7 +1471,7 @@ PODS:
     - React-featureflags
     - React-graphics
     - React-ImageManager
-    - react-native-keyboard-controller/common (= 1.18.2)
+    - react-native-keyboard-controller/common (= 1.17.5)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-rendererdebug
@@ -1477,7 +1480,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-keyboard-controller/common (1.18.2):
+  - react-native-keyboard-controller/common (1.17.5):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2161,7 +2164,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNPermissions (5.4.2):
+  - RNPermissions (5.4.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2485,6 +2488,7 @@ DEPENDENCIES:
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoLocalization (from `../node_modules/expo-localization/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
+  - ExpoMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSquircleView (from `../node_modules/expo-squircle-view/ios`)
@@ -2650,6 +2654,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-localization/ios"
   ExpoLocation:
     :path: "../node_modules/expo-location/ios"
+  ExpoMediaLibrary:
+    :path: "../node_modules/expo-media-library/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoSplashScreen:
@@ -2872,6 +2878,7 @@ SPEC CHECKSUMS:
   ExpoLinking: 8d12bee174ba0cdf31239706578e29e74a417402
   ExpoLocalization: 7776ea3bdb112125390745bbaf919b734b2ad1c7
   ExpoLocation: de58a60756fad907139ec422ccabb1ba734e080d
+  ExpoMediaLibrary: 2709fc2e4fcf87d28767714abcc603c4bec228c6
   ExpoModulesCore: c25d77625038b1968ea1afefc719862c0d8dd993
   ExpoSplashScreen: 8261985ce9778f904abc7e31bed3538dce67ed4d
   ExpoSquircleView: 0f3abe8b83641f934ef6146db50edc391739b32c
@@ -2924,7 +2931,7 @@ SPEC CHECKSUMS:
   react-native-bottom-tabs: 4e29ba5631b9890b9d15d3f1ef35c03a89a1bc2e
   react-native-config: 644074ab88db883fcfaa584f03520ec29589d7df
   react-native-image-picker: c5da8aa14fdffbd4d77338c352f52a8d85fcacec
-  react-native-keyboard-controller: c7b394ca5fa3bca2264d4bd37bd4ab1aeb62a991
+  react-native-keyboard-controller: b3d68f377e97666bf539ee7d8d6d77ac7a50f9ca
   react-native-mmkv: 5c69dce0d439e1791a884f6b166e76fc7fadaca6
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
   react-native-pager-view: 9517b214fb7321493339fbcf53a30abd54fea07b
@@ -2967,7 +2974,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: fffddeb8af59709c6d8de11b6461a6af63cad532
   RNInAppBrowser: 6d3eb68d471b9834335c664704719b8be1bfdb20
   RNLocalize: 9b5bc41c885b6138233c9ce6de8affb22cbc1e4f
-  RNPermissions: 166b6880aa94483ac566c35f3d7ec9b999239e7e
+  RNPermissions: 66e7065dd1826bf37f8d180248b2cb2c4ae26aca
   RNReanimated: 2e5069649cbab2c946652d3b97589b2ae0526220
   RNScreens: c7c659490e59cb0887cb098a9c9e9431392c05b2
   RNSentry: 39b6ae6ce58dafc766ae3704c50a420d79e6a999

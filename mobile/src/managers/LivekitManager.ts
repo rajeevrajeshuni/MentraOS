@@ -1,16 +1,5 @@
-import {
-  AudioSession,
-  LiveKitRoom,
-  useTracks,
-  TrackReferenceOrPlaceholder,
-  VideoTrack,
-  isTrackReference,
-  registerGlobals,
-} from "@livekit/react-native"
-
-import {Room, LocalAudioTrack, Track, AudioPreset, RoomEvent, ConnectionState} from "livekit-client"
-import Toast from "react-native-toast-message"
-import restComms from "./RestComms"
+import {Room, RoomEvent, ConnectionState} from "livekit-client"
+import restComms from "@/managers/RestComms"
 
 class LivekitManager {
   private static instance: LivekitManager
@@ -31,6 +20,10 @@ class LivekitManager {
     this.sequence += 1
     this.sequence = this.sequence % 256
     return this.sequence
+  }
+
+  public isRoomConnected(): boolean {
+    return this.room?.state === ConnectionState.Connected
   }
 
   public async connect() {
