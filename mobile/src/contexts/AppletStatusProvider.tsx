@@ -86,8 +86,11 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
         return applet
       })
 
+      // Get default wearable setting for compatibility check
+      const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+
       // Add offline apps to the beginning of the list (with compatibility check)
-      const appsWithOffline = [...getOfflineApps(status.glasses_info?.model_name), ...mapped]
+      const appsWithOffline = [...getOfflineApps(status.glasses_info?.model_name, defaultWearable), ...mapped]
 
       setAppStatus(currentAppStatus => {
         // Preserve running state from current appStatus for offline apps
