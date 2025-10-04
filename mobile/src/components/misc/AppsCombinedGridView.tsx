@@ -117,11 +117,6 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
       return a.name.localeCompare(b.name)
     })
 
-    // Log apps that were filtered out due to compatibility
-    // const incompatibleCount = appStatus.filter(
-    //   app => !app.is_running && app.compatibility && !app.compatibility.isCompatible,
-    // ).length
-
     return filtered
   }, [appStatus, activeApps.length])
 

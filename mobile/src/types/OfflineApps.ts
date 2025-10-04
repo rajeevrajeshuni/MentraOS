@@ -1,4 +1,5 @@
 import {AppletInterface} from "./AppletTypes"
+import {hasCamera} from "@/config/glassesFeatures"
 
 /**
  * Offline Apps Configuration
@@ -38,47 +39,43 @@ export const getOfflineApps = (
   return OFFLINE_APPS.map(app => {
     // Camera app requires camera-capable glasses to be connected
     if (app.packageName === "com.augmentos.camera") {
-      // No glasses saved/configured - show as incompatible
-      if (!defaultWearable) {
-        return {
-          ...app,
-          compatibility: {
-            isCompatible: false,
-            missingRequired: [{type: "camera", available: false}],
-            missingOptional: [],
-            message: "Camera app requires glasses with a camera to be connected.",
-          },
+      // Check camera capability - prioritize connected glasses, fallback to default wearable
+      const wearableToCheck = glassesModelName || defaultWearable
+
+      if (wearableToCheck) {
+        const hasGlassesCamera = hasCamera(wearableToCheck)
+
+        if (!hasGlassesCamera) {
+          // Mark as incompatible if glasses don't have camera
+          return {
+            ...app,
+            compatibility: {
+              isCompatible: false,
+              missingRequired: [{type: "camera", available: false}],
+              missingOptional: [],
+              message: `Camera app requires glasses with a camera. ${wearableToCheck} does not have a camera.`,
+            },
+          }
         }
+
+        // Glasses have camera capability - compatible
+        return app
       }
 
-      // Glasses saved but disconnected - hide entirely (return null to filter out)
-      if (defaultWearable && !glassesModelName) {
-        return null as any // This will be filtered out by the caller
+      // No glasses info available - show as incompatible
+      return {
+        ...app,
+        compatibility: {
+          isCompatible: false,
+          missingRequired: [{type: "camera", available: false}],
+          missingOptional: [],
+          message: "Camera app requires glasses with a camera to be connected.",
+        },
       }
-
-      // Glasses connected - check if they have camera capability
-      const {hasCamera} = require("@/config/glassesFeatures")
-      const hasGlassesCamera = hasCamera(glassesModelName)
-
-      if (!hasGlassesCamera) {
-        // Mark as incompatible if glasses don't have camera
-        return {
-          ...app,
-          compatibility: {
-            isCompatible: false,
-            missingRequired: [{type: "camera", available: false}],
-            missingOptional: [],
-            message: `Camera app requires glasses with a camera. ${glassesModelName} does not have a camera.`,
-          },
-        }
-      }
-
-      // Glasses connected with camera - compatible (return app as-is)
-      return app
     }
 
     return app
-  }).filter(app => app !== null) // Filter out null entries
+  })
 }
 
 /**

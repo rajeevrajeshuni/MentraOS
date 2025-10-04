@@ -213,9 +213,12 @@ export function hasCamera(wearable: string | null): boolean {
   if (!wearable) {
     return false
   }
+
   const featureSet = glassesFeatures[wearable]
+
   if (!featureSet) {
     return false
   }
+
   return featureSet.camera
 }

@@ -26,6 +26,7 @@ export default function IncompatibleAppsList() {
 
     // Check if app has compatibility info and is marked as incompatible
     const isIncompatible = app.compatibility && !app.compatibility.isCompatible
+
     return isIncompatible
   })
 

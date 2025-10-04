@@ -89,10 +89,12 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       // Get default wearable setting for compatibility check
       const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
 
-      // Add offline apps to the beginning of the list (with compatibility check)
-      const appsWithOffline = [...getOfflineApps(status.glasses_info?.model_name, defaultWearable), ...mapped]
-
       setAppStatus(currentAppStatus => {
+        // Add offline apps to the beginning of the list (with compatibility check)
+        const offlineApps = getOfflineApps(status.glasses_info?.model_name, defaultWearable)
+
+        const appsWithOffline = [...offlineApps, ...mapped]
+
         // Preserve running state from current appStatus for offline apps
         const offlineAppsWithState = appsWithOffline.map(app => {
           // Check if this is an offline app
@@ -102,21 +104,54 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
             // Preserve is_running and loading state if app was already in state
             if (existingApp) {
-              return {
+              const updatedApp = {
                 ...app,
                 is_running: existingApp.is_running,
                 loading: existingApp.loading,
               }
+
+              // Special logic for camera app: if it's running, override compatibility to be compatible
+              if (app.packageName === "com.augmentos.camera" && existingApp.is_running) {
+                updatedApp.compatibility = {
+                  isCompatible: true,
+                  missingRequired: [],
+                  missingOptional: [],
+                  message: "",
+                }
+              }
+
+              return updatedApp
             }
 
             // No existing state - restore from AsyncStorage for camera app
             if (app.packageName === "com.augmentos.camera") {
-              console.log("Restoring camera app state from AsyncStorage:", savedCameraAppState)
-              return {
+              const restoredApp = {
                 ...app,
                 is_running: savedCameraAppState ?? false,
                 loading: false,
               }
+
+              // If camera app is running, check if we have camera-capable glasses (connected or default)
+              if (savedCameraAppState) {
+                const wearableToCheck = status.glasses_info?.model_name || defaultWearable
+                const hasGlassesCamera = hasCamera(wearableToCheck)
+
+                if (hasGlassesCamera) {
+                  // Override compatibility to be compatible
+                  restoredApp.compatibility = {
+                    isCompatible: true,
+                    missingRequired: [],
+                    missingOptional: [],
+                    message: "",
+                  }
+                } else {
+                  restoredApp.is_running = false
+                  // Update AsyncStorage to reflect the stopped state
+                  useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, false)
+                }
+              }
+
+              return restoredApp
             }
           }
 
