@@ -1163,6 +1163,11 @@ struct ViewState {
         sgc?.queryGalleryStatus()
     }
 
+    func sendGalleryModeActive(_ active: Bool) {
+        Bridge.log("Mentra: 📸 Sending gallery mode active to glasses: \(active)")
+        sgc?.sendGalleryModeActive(active)
+    }
+
     func restartTranscriber() {
         Bridge.log("Mentra: Restarting SherpaOnnxTranscriber via command")
         transcriber?.restart()

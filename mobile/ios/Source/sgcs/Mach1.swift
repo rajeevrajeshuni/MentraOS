@@ -65,6 +65,8 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func queryGalleryStatus() {}
 
+    func sendGalleryModeActive(_: Bool) {}
+
     func showDashboard() {}
 
     func setDashboardPosition(_: Int, _: Int) {}
