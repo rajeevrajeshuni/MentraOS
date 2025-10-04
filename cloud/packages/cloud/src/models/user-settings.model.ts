@@ -66,6 +66,7 @@ const UserSettingsSchema = new Schema<UserSettingsI>(
 
 // Index for efficient queries
 UserSettingsSchema.index({ email: 1, lastUpdated: -1 });
+
 UserSettingsSchema.pre("save", function (next) {
   try {
     if (this.email && typeof this.email === "string") {
@@ -77,6 +78,8 @@ UserSettingsSchema.pre("save", function (next) {
   }
   next();
 });
+
+// (removed legacy pre-save that mutated userId based on email)
 
 // Instance Methods
 UserSettingsSchema.methods.updateSettings = async function (
@@ -141,6 +144,7 @@ UserSettingsSchema.methods.deleteSetting = async function (
 export const UserSettings =
   mongoose.models.UserSettings ||
   mongoose.model<UserSettingsI>("UserSettings", UserSettingsSchema);
+
 (async function migrateUserSettings() {
   const run = async () => {
     try {
@@ -236,3 +240,4 @@ export const UserSettings =
     mongoose.connection.on("connected", () => setTimeout(run, 0));
   }
 })();
+
