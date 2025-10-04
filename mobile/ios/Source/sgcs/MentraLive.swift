@@ -911,16 +911,6 @@ class MentraLive: NSObject, SGCManager {
     private var readinessCheckCounter = 0
     private var connectionTimeoutTimer: Timer?
 
-    // Callbacks
-    var jsonObservable: ((JSONObject) -> Void)?
-
-    // onButtonPress (buttonId: String, pressType: String)
-    var onButtonPress: ((String, String) -> Void)?
-    // onPhotoRequest (requestId: String, appId: String, webhookUrl: String?)
-    var onPhotoRequest: ((String, String) -> Void)?
-    // onVideoStreamResponse (appId: String, streamUrl: String)
-    var onVideoStreamResponse: ((String, String) -> Void)?
-
     // MARK: - Initialization
 
     override init() {
@@ -1450,8 +1440,6 @@ class MentraLive: NSObject, SGCManager {
             handleTransferFailed(json)
 
         default:
-            // Forward unknown types to observable
-            //      jsonObservable?(json)
             Bridge.log("Unhandled message type: \(type)")
         }
     }
@@ -1519,7 +1507,6 @@ class MentraLive: NSObject, SGCManager {
 
         default:
             Bridge.log("Unknown K900 command: \(command)")
-            jsonObservable?(json)
         }
     }
 
@@ -1628,7 +1615,7 @@ class MentraLive: NSObject, SGCManager {
         let pressType = json["pressType"] as? String ?? "short"
 
         Bridge.log("Received button press - buttonId: \(buttonId), pressType: \(pressType)")
-        onButtonPress?(buttonId, pressType)
+        Bridge.sendButtonPress(buttonId: buttonId, pressType: pressType)
     }
 
     private func handleVersionInfo(_ json: [String: Any]) {
@@ -1762,22 +1749,8 @@ class MentraLive: NSObject, SGCManager {
         }
     }
 
-    private func requestMissingPackets(fileName: String, missingPackets: [Int]) {
-        guard !missingPackets.isEmpty else {
-            Bridge.log("✅ No missing packets for \(fileName) - skipping request")
-            return
-        }
-
-        Bridge.log("🔍 Requesting retransmission due to missing packets for \(fileName): \(missingPackets)")
-
-        let payload: [String: Any] = [
-            "type": "request_missing_packets",
-            "fileName": fileName,
-            "missingPackets": missingPackets,
-        ]
-
-        sendJson(payload, wakeUp: true)
-    }
+    // requestMissingPackets() removed - no longer used with ACK system
+    // Phone now sends transfer_complete with success=false to trigger full retry
 
     // MARK: - File Transfer Processing
 
@@ -1833,8 +1806,12 @@ class MentraLive: NSObject, SGCManager {
                     } else if session.isFinalPacket(Int(packetInfo.packIndex)) {
                         let missingPackets = session.missingPacketIndices()
                         if !missingPackets.isEmpty {
-                            Bridge.log("📦 BLE transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)")
-                            requestMissingPackets(fileName: packetInfo.fileName, missingPackets: missingPackets)
+                            Bridge.log("❌ BLE photo transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)")
+                            Bridge.log("❌ Telling glasses to retry entire transfer")
+
+                            // Tell glasses transfer failed, they will retry
+                            sendTransferCompleteConfirmation(fileName: packetInfo.fileName, success: false)
+                            blePhotoTransfers.removeValue(forKey: bleImgId)
                         }
                     }
                 }
@@ -1873,8 +1850,12 @@ class MentraLive: NSObject, SGCManager {
                 } else if sess.isFinalPacket(Int(packetInfo.packIndex)) {
                     let missingPackets = sess.missingPacketIndices()
                     if !missingPackets.isEmpty {
-                        Bridge.log("📦 Transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)")
-                        requestMissingPackets(fileName: packetInfo.fileName, missingPackets: missingPackets)
+                        Bridge.log("❌ File transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)")
+                        Bridge.log("❌ Telling glasses to retry entire transfer")
+
+                        // Tell glasses transfer failed, they will retry
+                        sendTransferCompleteConfirmation(fileName: packetInfo.fileName, success: false)
+                        activeFileTransfers.removeValue(forKey: packetInfo.fileName)
                     }
                 }
             } else {
@@ -1948,9 +1929,6 @@ class MentraLive: NSObject, SGCManager {
             "fileType": String(format: "0x%02X", fileType),
             "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
         ]
-
-        // Emit event through data observable
-        jsonObservable?(event)
     }
 
     private func processAndUploadBlePhoto(_ transfer: BlePhotoTransfer, imageData: Data) {

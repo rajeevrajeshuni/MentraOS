@@ -13,7 +13,7 @@ import AudioPlayService, {AudioPlayResponse} from "@/services/AudioPlayService"
 import {translate} from "@/i18n"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import socketComms from "@/managers/SocketComms"
-// import livekitManager from "@/managers/LivekitManager"
+import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 
@@ -368,10 +368,10 @@ export class MantleBridge extends EventEmitter {
           GlobalEventEmitter.emit("APP_STOPPED_EVENT", data.packageName)
           break
         case "audio_play_request":
-          await AudioPlayService.handleAudioPlayRequest(data)
+          await AudioPlayService.handle_audio_play_request(data)
           break
         case "audio_stop_request":
-          await AudioPlayService.stopAllAudio()
+          await bridge.sendCommand("audio_stop_request")
           break
         case "wifi_scan_results":
           GlobalEventEmitter.emit("WIFI_SCAN_RESULTS", {
@@ -418,8 +418,19 @@ export class MantleBridge extends EventEmitter {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          socketComms.sendBinary(bytes)
-          // livekitManager.addPcm(bytes)
+          if (livekitManager.isRoomConnected()) {
+            livekitManager.addPcm(bytes)
+          } else {
+            socketComms.sendBinary(bytes)
+          }
+          break
+        case "rtmp_stream_status":
+          console.log("MantleBridge: Forwarding RTMP stream status to server:", data)
+          socketComms.sendRtmpStreamStatus(data)
+          break
+        case "keep_alive_ack":
+          console.log("MantleBridge: Forwarding keep-alive ACK to server:", data)
+          socketComms.sendKeepAliveAck(data)
           break
         default:
           console.log("Unknown event type:", data.type)
@@ -918,6 +929,13 @@ export class MantleBridge extends EventEmitter {
   async requestWifiScan() {
     return await this.sendData({
       command: "request_wifi_scan",
+    })
+  }
+
+  async disconnectFromWifi() {
+    console.log("Sending WiFi disconnect command to Core")
+    return await this.sendData({
+      command: "disconnect_wifi",
     })
   }
 

@@ -1,5 +1,8 @@
 # MentraOS Manager Guidelines
 
+RULES:
+READ: mentraos-manager-guidelines.mdx
+
 ## Overview
 
 MentraOS Manager is a React Native app built with Expo and expo-router for file-based routing. The app was recently migrated from vanilla React Native to Expo.

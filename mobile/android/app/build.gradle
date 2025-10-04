@@ -107,8 +107,8 @@ android {
         applicationId 'com.mentra.mentra'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 44
-        versionName "2.2.10"
+        versionCode 49
+        versionName "2.2.11"
     }
     signingConfigs {
         debug {
