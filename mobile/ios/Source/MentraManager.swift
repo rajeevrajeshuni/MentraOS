@@ -547,7 +547,7 @@ struct ViewState {
             // )
 
             // if a g1 is connected, set the mic enabled:
-            if sgc?.type == "g1", sgc!.ready {
+            if sgc?.hasMic ?? false, sgc!.ready {
                 await sgc!.setMicEnabled(useGlassesMic)
             }
 
