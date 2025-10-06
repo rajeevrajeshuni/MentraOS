@@ -60,6 +60,9 @@ jobs:
         working-directory: ./mobile/ios
         run: pod install
 
+      - name: List available simulators
+        run: xcrun simctl list devices available
+
       - name: Build iOS app for Simulator
         working-directory: ./mobile/ios
         run: |
@@ -67,8 +70,7 @@ jobs:
                      -scheme AOS \
                      -configuration Debug \
                      -sdk iphonesimulator \
-                     -derivedDataPath build \
-                     -destination 'platform=iOS Simulator,name=iPhone 15'
+                     -derivedDataPath build
 
       - name: Build iOS app for Device
         working-directory: ./mobile/ios
