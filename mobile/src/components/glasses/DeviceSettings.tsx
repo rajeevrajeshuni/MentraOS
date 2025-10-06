@@ -395,6 +395,15 @@ export default function DeviceSettings() {
         />
       )}
 
+      {/* Screen settings for binocular glasses */}
+      {defaultWearable && glassesFeatures[defaultWearable]?.binocular && (
+        <RouteButton
+          label={translate("settings:screenSettings")}
+          subtitle={translate("settings:screenDescription")}
+          onPress={() => push("/settings/screen")}
+        />
+      )}
+
       {defaultWearable && isGlassesConnected && defaultWearable !== "Simulated Glasses" && (
         <ActionButton
           label={translate("settings:disconnectGlasses")}
