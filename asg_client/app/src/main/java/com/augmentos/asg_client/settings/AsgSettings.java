@@ -23,7 +23,7 @@ public class AsgSettings {
     private final Context context;
     
     // Transient state - not persisted, resets on restart
-    private volatile boolean saveInGalleryMode = false;
+    private volatile boolean saveInGalleryMode = true;
     
     public AsgSettings(Context context) {
         this.context = context;
