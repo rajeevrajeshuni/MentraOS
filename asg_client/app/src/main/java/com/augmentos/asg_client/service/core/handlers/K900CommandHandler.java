@@ -170,7 +170,7 @@ public class K900CommandHandler {
 
     /**
      * Handle photo/video capture based on gallery mode state
-     * Only captures if camera/gallery app is currently active
+     * Only captures if camera/gallery app is currently active OR if glasses are disconnected
      */
     private void handlePhotoCapture(boolean isLongPress) {
         // Check if gallery/camera app is active before capturing
@@ -178,12 +178,19 @@ public class K900CommandHandler {
             .getAsgSettings()
             .isSaveInGalleryMode();
         
-        if (!isSaveInGalleryMode) {
-            Log.d(TAG, "📸 Camera app not active - skipping local capture (button press already forwarded to apps)");
+        // Check if glasses are disconnected from phone
+        boolean isDisconnected = !serviceManager.isConnected();
+        
+        if (!isSaveInGalleryMode && !isDisconnected) {
+            Log.d(TAG, "📸 Camera app not active and glasses connected - skipping local capture (button press already forwarded to apps)");
             return;
         }
         
-        Log.d(TAG, "📸 Camera app active - proceeding with local capture");
+        if (isDisconnected) {
+            Log.d(TAG, "📸 Glasses disconnected from phone - proceeding with local capture regardless of gallery mode");
+        } else {
+            Log.d(TAG, "📸 Camera app active - proceeding with local capture");
+        }
 
         MediaCaptureService captureService = serviceManager.getMediaCaptureService();
         if (captureService == null) {
