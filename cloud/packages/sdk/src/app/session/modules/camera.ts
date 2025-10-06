@@ -29,7 +29,7 @@ import {
   ManagedStreamOptions,
   ManagedStreamResult,
 } from "./camera-managed-extension";
-import { cameraWarnLog } from "src/utils/permissions-utils";
+import { cameraWarnLog } from "../../../utils/permissions-utils";
 
 /**
  * Options for photo requests

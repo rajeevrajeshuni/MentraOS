@@ -726,7 +726,7 @@ export class AppManager {
         );
       } catch (webhookError) {
         this.logger.error(
-          { webhookError },
+          webhookError,
           `Error triggering stop webhook for ${packageName}:`,
         );
       }

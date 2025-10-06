@@ -71,7 +71,7 @@ import {
   isStreamStatusCheckResponse,
 } from "../../types/messages/cloud-to-app";
 import { SimpleStorage } from "./modules/simple-storage";
-import { readNotificationWarnLog } from "src/utils/permissions-utils";
+import { readNotificationWarnLog } from "../../utils/permissions-utils";
 
 /**
  * ⚙️ Configuration options for App Session

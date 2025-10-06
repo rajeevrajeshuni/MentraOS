@@ -1,4 +1,5 @@
-import { locationWarnLog } from "src/utils/permissions-utils";
+import { locationWarnLog } from "../../../utils/permissions-utils";
+
 import { AppSession } from "..";
 import {
   AppToCloudMessageType,

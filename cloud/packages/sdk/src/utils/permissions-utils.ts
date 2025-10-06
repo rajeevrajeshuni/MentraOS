@@ -25,12 +25,11 @@ import {
   readNotficationWarn,
   postNotficationWarn,
   cameraWarn,
-} from "src/constants/log-messages/warning";
+} from "../constants/log-messages/warning";
 import {
   PackagePermissions,
   Permission,
-} from "src/types/messages/cloud-to-app";
-
+} from "../../src/types/messages/cloud-to-app";
 // Check if app has microphone permission, warn if missing
 export const microPhoneWarnLog = (
   cloudServerUrl: string,

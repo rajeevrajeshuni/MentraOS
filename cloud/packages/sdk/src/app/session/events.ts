@@ -37,7 +37,7 @@ import { PermissionErrorDetail } from "../../types/messages/cloud-to-app";
 import {
   calendarWarnLog,
   microPhoneWarnLog,
-} from "src/utils/permissions-utils";
+} from "../../utils/permissions-utils";
 
 /** 🎯 Type-safe event handler function */
 type Handler<T> = (data: T) => void;
