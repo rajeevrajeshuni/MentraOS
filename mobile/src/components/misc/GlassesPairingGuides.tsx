@@ -1,18 +1,8 @@
 // GlassesPairingGuides.tsx
 
 import {useAppTheme} from "@/utils/useAppTheme"
-import React, {useEffect} from "react"
-import {
-  View,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Linking,
-  ImageStyle,
-  ViewStyle,
-  TextStyle,
-  Platform,
-} from "react-native"
+import {useEffect} from "react"
+import {View, Image, TouchableOpacity, Linking, ImageStyle, ViewStyle, TextStyle} from "react-native"
 import {Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {showAlert} from "@/utils/AlertUtils"
@@ -28,6 +18,169 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated"
 import {ThemedStyle} from "@/theme"
+import GlassesDisplayMirror from "./GlassesDisplayMirror"
+
+export function MentraNextGlassesPairingGuide() {
+  const {theme, themed} = useAppTheme()
+
+  // Animation values
+  const glassesOpacity = useSharedValue(1)
+  const glassesTranslateY = useSharedValue(0)
+  const glassesScale = useSharedValue(1)
+  const caseOpacity = useSharedValue(1)
+  const arrowOpacity = useSharedValue(0)
+  const finalImageOpacity = useSharedValue(0)
+
+  // Start animation sequence when component mounts
+  // useEffect(() => {
+  //   const startAnimation = () => {
+  //     // Step 1: Show the case
+  //     caseOpacity.value = withTiming(1, {duration: 800})
+
+  //     // Step 2: Show arrow after case appears
+  //     arrowOpacity.value = withDelay(1000, withTiming(1, {duration: 500}))
+
+  //     // Step 3: Animate glasses moving down and scaling
+  //     glassesTranslateY.value = withDelay(
+  //       1500,
+  //       withTiming(120, {
+  //         duration: 1200,
+  //         easing: Easing.out(Easing.cubic),
+  //       }),
+  //     )
+
+  //     glassesScale.value = withDelay(
+  //       1500,
+  //       withTiming(0.7, {
+  //         duration: 1200,
+  //         easing: Easing.out(Easing.cubic),
+  //       }),
+  //     )
+
+  //     // Step 4: Fade out glasses and arrow, show final image
+  //     glassesOpacity.value = withDelay(2700, withTiming(0, {duration: 400}))
+  //     arrowOpacity.value = withDelay(2700, withTiming(0, {duration: 400}))
+  //     finalImageOpacity.value = withDelay(3100, withTiming(1, {duration: 600}))
+  //   }
+
+  //   // Start animation after a short delay
+  //   const timer = setTimeout(startAnimation, 500)
+  //   return () => clearTimeout(timer)
+  // }, [])
+
+  useEffect(() => {
+    const resetValues = () => {
+      glassesOpacity.value = 1
+      glassesTranslateY.value = 0
+      glassesScale.value = 1
+      caseOpacity.value = 1
+      arrowOpacity.value = 0
+      finalImageOpacity.value = 0
+    }
+
+    const startAnimation = () => {
+      // Reset all values to initial state
+      resetValues()
+
+      // Step 1: Show the case
+      // caseOpacity.value = withTiming(1, {duration: 800})
+
+      // Step 3: Animate glasses moving down and scaling
+      glassesTranslateY.value = withDelay(
+        500,
+        withTiming(160, {
+          duration: 1800,
+          easing: Easing.out(Easing.cubic),
+        }),
+      )
+
+      glassesScale.value = withDelay(
+        500,
+        withTiming(0.7, {
+          duration: 1200,
+          easing: Easing.out(Easing.cubic),
+        }),
+      )
+
+      // Step 4: Fade out glasses and arrow, show final image
+      glassesOpacity.value = withDelay(1000, withTiming(0, {duration: 400}))
+
+      // Step 5: Show final image briefly, then restart
+      finalImageOpacity.value = withDelay(
+        1000,
+        withTiming(1, {duration: 600}, finished => {
+          if (finished) {
+            // // Hold the final state for 1.5 seconds, then restart
+            finalImageOpacity.value = withDelay(
+              1000,
+              withTiming(0, {duration: 400}, finished => {
+                if (finished) {
+                  runOnJS(startAnimation)()
+                }
+              }),
+            )
+            glassesTranslateY.value = 0
+            glassesScale.value = 1
+            glassesOpacity.value = withDelay(1000, withTiming(1, {duration: 400}))
+          }
+        }),
+      )
+    }
+
+    // short delay before starting the animation
+    const timer = setTimeout(startAnimation, 300)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const animatedGlassesStyle = useAnimatedStyle(() => ({
+    opacity: glassesOpacity.value,
+    transform: [{translateY: glassesTranslateY.value}, {scale: glassesScale.value}],
+  }))
+
+  const animatedCaseStyle = useAnimatedStyle(() => ({
+    opacity: caseOpacity.value,
+  }))
+
+  const animatedArrowStyle = useAnimatedStyle(() => ({
+    opacity: arrowOpacity.value,
+  }))
+
+  const animatedFinalImageStyle = useAnimatedStyle(() => ({
+    opacity: finalImageOpacity.value,
+  }))
+
+  return (
+    <View style={themed($guideContainer)}>
+      <Text
+        text="1. Disconnect your MentraNex from within the MentraNex app, or uninstall the MentraNex app"
+        style={themed($guideStep)}
+      />
+      <Text text="2. Place your MentraNex in the charging case with the lid open." style={themed($guideStep)} />
+
+      <View style={themed($animationContainer)}>
+        {/* Glasses Image - Animated */}
+        <Animated.View style={[themed($glassesContainer), animatedGlassesStyle]}>
+          <Image source={require("../../../assets/glasses/g1.png")} style={themed($glassesImage)} />
+        </Animated.View>
+
+        {/* Case Image - Fades in */}
+        <Animated.View style={[themed($caseContainer), animatedCaseStyle]}>
+          <Image source={require("../../../assets/guide/image_g1_case_closed.png")} style={themed($caseImage)} />
+        </Animated.View>
+
+        {/* Arrow - Appears and disappears */}
+        <Animated.View style={[themed($arrowContainer), animatedArrowStyle]}>
+          <MaterialCommunityIcons name="arrow-down" size={36} color={theme.colors.text} />
+        </Animated.View>
+
+        {/* Final paired image - Fades in at the end */}
+        <Animated.View style={[themed($caseContainer), animatedFinalImageStyle]}>
+          <Image source={require("../../../assets/guide/image_g1_pair.png")} style={themed($caseImage)} />
+        </Animated.View>
+      </View>
+    </View>
+  )
+}
 
 export function EvenRealitiesG1PairingGuide() {
   const {theme, themed} = useAppTheme()
@@ -248,20 +401,6 @@ const $arrowContainer: ThemedStyle<ViewStyle> = () => ({
   width: "100%",
 })
 
-const $finalImageContainer: ThemedStyle<ViewStyle> = () => ({
-  position: "absolute",
-  bottom: 0,
-  zIndex: 4,
-  alignItems: "center",
-  width: "100%",
-})
-
-const $finalImage: ThemedStyle<ImageStyle> = () => ({
-  width: "100%",
-  height: 200,
-  resizeMode: "contain",
-})
-
 export function MentraMach1PairingGuide() {
   const {theme} = useAppTheme()
   const textColor = theme.isDark ? "white" : "black"
@@ -306,7 +445,7 @@ export function MentraLivePairingGuide() {
           source={require("../../../assets/glasses/mentra_live.png")}
           style={[styles.guideImage, {marginVertical: 0}]}
           // Fallback if image doesn't exist
-          onError={e => console.log("Image failed to load")}
+          onError={() => console.log("Image failed to load")}
         />
 
         {/* Feature list */}
@@ -331,7 +470,7 @@ export function MentraLivePairingGuide() {
                 },
                 {
                   text: "Continue",
-                  onPress: () => Linking.openURL("https://mentra.glass/live"),
+                  onPress: () => Linking.openURL("https://mentra.glass"),
                 },
               ])
             }}>
@@ -405,8 +544,27 @@ export function VirtualWearablePairingGuide() {
   const {theme} = useAppTheme()
   return (
     <View style={styles.guideContainer}>
-      <Text text="Simulated Glasses" style={[styles.guideTitle, {color: theme.colors.text}]} />
-      <Text tx="pairing:simulatedGlassesDescription" style={[styles.guideStep, {color: theme.colors.text}]} />
+      <Text text="Preview MentraOS" style={[styles.guideTitle, {color: theme.colors.text}]} />
+
+      {/* Hero description */}
+      <Text
+        text="Experience the full power of MentraOS without physical glasses. Simulated Glasses provides a virtual display that mirrors exactly what you would see on real smart glasses."
+        style={[styles.guideDescription, {color: theme.colors.text}]}
+      />
+
+      {/* Glasses Display Mirror in demo mode */}
+      <View style={styles.mirrorWrapper}>
+        <GlassesDisplayMirror demo={true} demoText="Simulated Glasses Display" />
+      </View>
+
+      {/* Note about upgrading */}
+      <View style={[styles.noteSection, {backgroundColor: theme.colors.backgroundAlt}]}>
+        <MaterialCommunityIcons name="information" size={20} style={{marginRight: 8, color: theme.colors.text}} />
+        <Text
+          text="Ready to upgrade? You can connect real smart glasses later from the Glasses menu."
+          style={[styles.noteText, {color: theme.colors.text}]}
+        />
+      </View>
     </View>
   )
 }
@@ -450,33 +608,7 @@ export function BrilliantLabsFramePairingGuide() {
   )
 }
 
-const styles = StyleSheet.create({
-  // guideContainer: {
-  //   marginTop: 20,
-  //   width: '90%',
-  // },
-  // guideTitle: {
-  //   fontSize: 18,
-  //   fontWeight: 'bold',
-  //   marginBottom: 10,
-  // },
-  // guideStep: {
-  //   fontSize: 16,
-  //   marginBottom: 8,
-  // },
-  // guideDescription: {
-  //   fontSize: 14,
-  //   marginTop: 12,
-  //   marginBottom: 8,
-  //   fontStyle: 'italic',
-  // },
-  // guideImage: {
-  //   width: '100%',
-  //   height: 200, // Adjust height as needed
-  //   resizeMode: 'contain',
-  //   marginVertical: 10,
-  // },
-
+const styles = {
   guideContainer: {
     marginTop: 20,
     width: "100%",
@@ -486,20 +618,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
-  },
-  marketingBanner: {
-    borderRadius: 8,
-    marginBottom: 15,
-    padding: 12,
-  },
-  marketingTag: {
-    fontSize: 12,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  marketingText: {
-    fontSize: 16,
-    fontWeight: "500",
   },
   guideStep: {
     fontSize: 16,
@@ -516,29 +634,6 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     resizeMode: "contain",
     width: "100%",
-  },
-  featuresContainer: {
-    alignItems: "center",
-    borderRadius: 16,
-    flexDirection: "column",
-    padding: 12,
-    paddingLeft: 36,
-  },
-  featuresRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  featureItem: {
-    alignItems: "center",
-    alignSelf: "center",
-    flexDirection: "row",
-    flex: 1,
-    marginBottom: 12,
-  },
-  featureText: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginLeft: 10,
   },
   buySection: {
     marginTop: 20,
@@ -560,4 +655,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
-})
+  mirrorWrapper: {
+    width: "100%",
+    marginVertical: 20,
+  },
+  noteSection: {
+    width: "100%",
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  noteText: {
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 20,
+  },
+}

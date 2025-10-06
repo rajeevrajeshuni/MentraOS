@@ -1,20 +1,16 @@
-import React from "react"
-import {View, Text, StyleSheet, Platform, Linking, ViewStyle, ScrollView} from "react-native"
+import {View, Platform, Linking, ScrollView} from "react-native"
 import {useRoute} from "@react-navigation/native"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {getPairingGuide} from "@/utils/getPairingGuide"
 import {PermissionsAndroid} from "react-native"
 import {requestFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 import {showAlert, showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
 import {Button, Header} from "@/components/ignite"
-import {router} from "expo-router"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Screen} from "@/components/ignite/Screen"
 import bridge from "@/bridge/MantleBridge"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {LinearGradient} from "expo-linear-gradient"
-import {saveSetting, SETTINGS_KEYS} from "@/utils/SettingsHelper"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 
 // Alert handling is now done directly in PermissionsUtils.tsx
 
@@ -22,7 +18,6 @@ import {saveSetting, SETTINGS_KEYS} from "@/utils/SettingsHelper"
 // This simplifies our code and avoids making redundant permission requests
 
 export default function PairingPrepScreen() {
-  const {status} = useCoreStatus()
   const route = useRoute()
   const {theme} = useAppTheme()
   const {glassesModelName} = route.params as {glassesModelName: string}
@@ -278,9 +273,9 @@ export default function PairingPrepScreen() {
 
     // skip pairing for simulated glasses:
     if (glassesModelName.startsWith("Simulated")) {
-      await saveSetting(SETTINGS_KEYS.default_wearable, "Simulated Glasses")
+      await useSettingsStore.getState().setSetting(SETTINGS_KEYS.default_wearable, "Simulated Glasses")
       bridge.sendSearchForCompatibleDeviceNames("Simulated Glasses")
-      bridge.sendConnectWearable("Simulated Glasses", "Simulated Glasses")
+      bridge.sendConnectWearable("Simulated Glasses", "Simulated Glasses", "")
       clearHistoryAndGoHome()
       return
     }
@@ -295,15 +290,13 @@ export default function PairingPrepScreen() {
         <View style={styles.contentContainer}>{getPairingGuide(glassesModelName)}</View>
       </ScrollView>
       <View style={{marginBottom: theme.spacing.lg}}>
-        <Button onPress={advanceToPairing} disabled={false}>
-          <Text>{translate("common:continue")}</Text>
-        </Button>
+        <Button onPress={advanceToPairing} disabled={false} tx="common:continue" />
       </View>
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
     flex: 1,
   },
@@ -337,4 +330,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
   },
-})
+} as const

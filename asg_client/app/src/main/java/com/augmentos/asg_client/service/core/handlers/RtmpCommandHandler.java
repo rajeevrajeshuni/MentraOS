@@ -7,6 +7,7 @@ import com.augmentos.asg_client.io.streaming.services.RtmpStreamingService;
 import com.augmentos.asg_client.service.legacy.interfaces.ICommandHandler;
 import com.augmentos.asg_client.service.media.interfaces.IMediaManager;
 import com.augmentos.asg_client.service.system.interfaces.IStateManager;
+import com.augmentos.asg_client.service.utils.ServiceConstants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -65,13 +66,13 @@ public class RtmpCommandHandler implements ICommandHandler {
             String rtmpUrl = data.optString("rtmpUrl", "");
             if (rtmpUrl.isEmpty()) {
                 Log.e(TAG, "Cannot start RTMP stream - missing rtmpUrl");
-                streamingManager.sendRtmpStatusResponse(false, "missing_rtmp_url", null);
+                streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR, ServiceConstants.ERROR_MISSING_RTMP_URL);
                 return false;
             }
 
             if (!stateManager.isConnectedToWifi()) {
                 Log.e(TAG, "Cannot start RTMP stream - no WiFi connection");
-                streamingManager.sendRtmpStatusResponse(false, "no_wifi_connection", null);
+                streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR, ServiceConstants.ERROR_NO_WIFI_CONNECTION);
                 return false;
             }
 
@@ -91,7 +92,7 @@ public class RtmpCommandHandler implements ICommandHandler {
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error handling RTMP start command", e);
-            streamingManager.sendRtmpStatusResponse(false, "error", e.getMessage());
+            streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR, e.getMessage());
             return false;
         }
     }
@@ -103,15 +104,15 @@ public class RtmpCommandHandler implements ICommandHandler {
         try {
             if (RtmpStreamingService.isStreaming()) {
                 RtmpStreamingService.stopStreaming(context);
-                streamingManager.sendRtmpStatusResponse(true, "stopping", null);
+                streamingManager.sendRtmpStatusResponse(true, ServiceConstants.STATUS_STOPPING, null);
                 return true;
             } else {
-                streamingManager.sendRtmpStatusResponse(false, "not_streaming", null);
+                streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR, ServiceConstants.ERROR_NOT_STREAMING);
                 return false;
             }
         } catch (Exception e) {
             Log.e(TAG, "Error handling RTMP stop command", e);
-            streamingManager.sendRtmpStatusResponse(false, "error", e.getMessage());
+            streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR, e.getMessage());
             return false;
         }
     }
@@ -136,7 +137,7 @@ public class RtmpCommandHandler implements ICommandHandler {
             return true;
         } catch (JSONException e) {
             Log.e(TAG, "Error creating RTMP status response", e);
-            streamingManager.sendRtmpStatusResponse(false, "json_error", e.getMessage());
+            streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR, ServiceConstants.ERROR_JSON_ERROR);
             return false;
         }
     }
@@ -149,18 +150,34 @@ public class RtmpCommandHandler implements ICommandHandler {
             String streamId = data.optString("streamId", "");
             String ackId = data.optString("ackId", "");
 
-            if (!streamId.isEmpty() && !ackId.isEmpty()) {
-                boolean streamIdValid = RtmpStreamingService.resetStreamTimeout(streamId);
-                if (streamIdValid) {
+            // Validate we have required fields
+            if (streamId.isEmpty() || ackId.isEmpty()) {
+                Log.d(TAG, "Keep-alive missing required fields (streamId or ackId) - ignoring");
+                return false;
+            }
+
+            // Now we know we have both streamId and ackId
+            boolean streamIdValid = RtmpStreamingService.resetStreamTimeout(streamId);
+            if (streamIdValid) {
+                // Stream is active and recognized
+                streamingManager.sendKeepAliveAck(streamId, ackId);
+                return true;
+            } else {
+                // Stream not recognized or not fully active yet
+                // This can happen if keep-alive arrives during initialization
+                // With the cloud fix, this should be rare
+                if (RtmpStreamingService.isStreaming()) {
+                    // We're in the process of streaming but not fully active yet
+                    Log.d(TAG, "Stream still initializing, ACKing keep-alive anyway (streamId: " + streamId + ")");
                     streamingManager.sendKeepAliveAck(streamId, ackId);
                     return true;
                 } else {
-                    Log.e(TAG, "Received keep-alive for unknown stream ID: " + streamId);
-                    RtmpStreamingService.stopStreaming(context);
+                    // Not streaming at all - this is an orphaned keep-alive
+                    Log.w(TAG, "Keep-alive for unknown stream, not currently streaming: " + streamId);
+                    // Don't forcefully stop - let cloud timeout naturally
                     return false;
                 }
             }
-            return false;
         } catch (Exception e) {
             Log.e(TAG, "Error handling RTMP keep-alive command", e);
             return false;

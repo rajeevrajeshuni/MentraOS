@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   useNavigate,
   useSearchParams,
-  Link,
-  useLocation,
 } from "react-router-dom";
-import { Search, X, Building, Lock } from "lucide-react";
+import { X, Building } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { usePlatform } from "../hooks/usePlatform";
@@ -17,7 +15,6 @@ import { AppI } from "../types";
 import Header from "../components/Header";
 import AppCard from "../components/AppCard";
 import { toast } from "sonner";
-import { Button } from "../components/ui/button";
 import { formatCompatibilityError } from "../utils/errorHandling";
 
 // Extend window interface for React Native WebView
@@ -53,6 +50,7 @@ const AppStore: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [apps, setApps] = useState<AppI[]>([]);
+  const [originalApps, setOriginalApps] = useState<AppI[]>([]);
   const [installingApp, setInstallingApp] = useState<string | null>(null);
   const [activeOrgFilter, setActiveOrgFilter] = useState<string | null>(orgId);
   const [orgName, setOrgName] = useState<string>("");
@@ -96,6 +94,7 @@ const AppStore: React.FC = () => {
         appList = await api.app.getAvailableApps(
           orgId ? filterOptions : undefined,
         );
+        // console.log("Fetched available apps:", pkgapps);
 
         // If we're filtering by organization, get the organization name from the first app
         if (orgId && appList.length > 0) {
@@ -108,7 +107,7 @@ const AppStore: React.FC = () => {
           }
         }
       } catch (err) {
-        console.error("Error fetching public apps:", err);
+        // console.error("Error fetching public apps:", err);
         setError("Failed to load apps. Please try again.");
         return;
       }
@@ -139,6 +138,7 @@ const AppStore: React.FC = () => {
       }
 
       setApps(appList);
+      setOriginalApps(appList);
     } catch (err) {
       console.error("Error fetching apps:", err);
       setError("Failed to load apps. Please try again.");
@@ -152,12 +152,20 @@ const AppStore: React.FC = () => {
     if (searchQuery.trim() === "") return apps;
 
     const query = searchQuery.toLowerCase();
-    return apps.filter(
+    const filtered = apps.filter(
       (app) =>
         app.name.toLowerCase().includes(query) ||
-        (app.description && app.description.toLowerCase().includes(query)),
+        (app.description && app.description.toLowerCase().includes(query)) ||
+        app.packageName.toLowerCase().includes(query), // Also match package name
     );
-  }, [apps, searchQuery]);
+
+    // If we have a single app that was found by package search, show it regardless
+    if (apps.length === 1 && apps !== originalApps) {
+      return apps;
+    }
+
+    return filtered;
+  }, [apps, originalApps, searchQuery]);
 
   /**
    * Handles search form submission
@@ -355,6 +363,73 @@ const AppStore: React.FC = () => {
     navigate("/login");
   }, [navigate]);
 
+  const handleSearchChange = useCallback(
+    async (value: string) => {
+      setSearchQuery(value);
+      // console.log("🔍 Search input:", value);
+
+      // Restore original apps if we had searched by package before
+      if (apps !== originalApps) {
+        setApps(originalApps);
+      }
+
+      if (value.trim() === "") {
+        // console.log("📊 Total apps available:", originalApps.length);
+        return;
+      }
+
+      const query = value.toLowerCase();
+      const filtered = originalApps.filter(
+        (app) =>
+          app.name.toLowerCase().includes(query) ||
+          (app.description && app.description.toLowerCase().includes(query)),
+      );
+
+      // console.log(`📊 Apps matching "${value}":`, filtered.length);
+
+      // If no local matches, try searching by package name
+      if (filtered.length === 0) {
+        // console.log("🔎 No local matches found. Searching by package name...");
+        setIsLoading(true);
+        try {
+          const pkgApp = await api.app.getAppByPackageName(value);
+
+          if (pkgApp) {
+            // console.log("✅ Found app by package name:", pkgApp.name, `(${pkgApp.packageName})`);
+            // Check if user is authenticated to get install status
+            if (isAuthenticated && isAuthTokenReady()) {
+              try {
+                const installedApps = await api.app.getInstalledApps();
+                pkgApp.isInstalled = installedApps.some(
+                  (app) => app.packageName === pkgApp.packageName,
+                );
+                console.log(
+                  `📱 App install status: ${pkgApp.isInstalled ? "INSTALLED" : "NOT INSTALLED"}`,
+                );
+              } catch (error) {
+                console.error("⚠️ Error checking install status:", error);
+                pkgApp.isInstalled = false;
+              }
+            } else {
+              pkgApp.isInstalled = false;
+              // console.log("🔒 User not authenticated - showing as not installed");
+            }
+
+            setApps([pkgApp]);
+            // Don't clear search query - let filteredApps handle it
+          } else {
+            // console.log("❌ No app found with package name:", value);
+          }
+        } catch (error) {
+          // console.error("⚠️ Error searching by package name:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    },
+    [apps, originalApps, isAuthenticated, isAuthTokenReady],
+  );
+
   return (
     <div
       className="min-h-screen text-white"
@@ -382,7 +457,7 @@ const AppStore: React.FC = () => {
           >
             <SearchBar
               searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
+              onSearchChange={handleSearchChange}
               onSearchSubmit={handleSearch}
               onClear={() => {
                 setSearchQuery("");

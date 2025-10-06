@@ -10,7 +10,6 @@ import {
   CloudToAppMessageType,
   CloudToGlassesMessageType,
   ConnectionError,
-  TranscriptSegment,
 } from "@mentra/sdk";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { Capabilities } from "@mentra/sdk";
@@ -32,6 +31,8 @@ import { getCapabilitiesForModel } from "../../config/hardware-capabilities";
 import { HardwareCompatibilityService } from "./HardwareCompatibilityService";
 import appService from "../core/app.service";
 import SubscriptionManager from "./SubscriptionManager";
+import LiveKitManager from "./LiveKitManager";
+import SpeakerManager from "./SpeakerManager";
 
 export const LOG_PING_PONG = false; // Set to true to enable detailed ping/pong logging
 /**
@@ -61,7 +62,7 @@ export class UserSession {
   public appWebsockets: Map<string, WebSocket> = new Map();
 
   // Transcription
-  public isTranscribing = false;
+  public isTranscribing = false; // TODO(isaiah): Sync with frontend to see if we can remove this property.
   public lastAudioTimestamp?: number;
 
   // Audio
@@ -81,6 +82,8 @@ export class UserSession {
   public transcriptionManager: TranscriptionManager;
   public translationManager: TranslationManager;
   public subscriptionManager: SubscriptionManager;
+  public liveKitManager: LiveKitManager;
+  public speakerManager: SpeakerManager;
 
   public videoManager: VideoManager;
   public photoManager: PhotoManager;
@@ -91,12 +94,27 @@ export class UserSession {
 
   // Heartbeat for glasses connection
   private glassesHeartbeatInterval?: NodeJS.Timeout;
+  private lastPongTime?: number;
+  private pongTimeoutTimer?: NodeJS.Timeout;
+  private readonly PONG_TIMEOUT_MS = 30000; // 30 seconds - 3x heartbeat interval
+
+  // SAFETY FLAG: Set to false to disable pong timeout behavior entirely
+  private static readonly PONG_TIMEOUT_ENABLED = false; // TODO: Set to true when ready to enable connection tracking
+
+  // Connection state tracking
+  public phoneConnected: boolean = false;
+  public glassesConnected: boolean = false;
+  public glassesModel?: string;
+  public lastGlassesStatusUpdate?: Date;
 
   // Audio play request tracking - maps requestId to packageName
   public audioPlayRequestMapping: Map<string, string> = new Map();
 
   // Other state
   public userDatetime?: string;
+
+  // LiveKit transport preference
+  public livekitRequested?: boolean;
 
   // Capability Discovery
   public capabilities: Capabilities | null = null;
@@ -108,6 +126,7 @@ export class UserSession {
     this.userId = userId;
     this.websocket = websocket;
     this.logger = rootLogger.child({ userId, service: "UserSession" });
+    this.startTime = new Date();
 
     // Initialize managers
     this.appManager = new AppManager(this);
@@ -122,16 +141,19 @@ export class UserSession {
     this.photoManager = new PhotoManager(this);
     this.videoManager = new VideoManager(this);
     this.managedStreamingExtension = new ManagedStreamingExtension(this.logger);
+    this.liveKitManager = new LiveKitManager(this);
+    this.speakerManager = new SpeakerManager(this);
 
     this._reconnectionTimers = new Map();
-    this.startTime = new Date();
 
     // Set up heartbeat for glasses connection
     this.setupGlassesHeartbeat();
 
     // Register in static session map
     UserSession.sessions.set(userId, this);
-    this.logger.info(`✅ User session created and registered for ${userId} (static map)`);
+    this.logger.info(
+      `✅ User session created and registered for ${userId} (static map)`,
+    );
 
     // Register for leak detection
     memoryLeakDetector.register(this, `UserSession:${userId}`);
@@ -162,15 +184,32 @@ export class UserSession {
       }
     }, HEARTBEAT_INTERVAL);
 
-    // Set up pong handler
+    // Set up pong handler with timeout detection
     this.websocket.on("pong", () => {
+      this.lastPongTime = Date.now();
+      this.phoneConnected = true; // Phone is alive if we got pong
+
       if (LOG_PING_PONG) {
         this.logger.debug(
           { pong: true },
           `[UserSession:heartbeat:pong] Received pong from glasses for user ${this.userId}`,
         );
       }
+
+      // Reset the timeout timer only if enabled
+      if (UserSession.PONG_TIMEOUT_ENABLED) {
+        this.resetPongTimeout();
+      }
     });
+
+    // Initialize pong tracking
+    this.lastPongTime = Date.now();
+    this.phoneConnected = true;
+
+    // Only start timeout tracking if enabled
+    if (UserSession.PONG_TIMEOUT_ENABLED) {
+      this.resetPongTimeout();
+    }
 
     this.logger.debug(
       `[UserSession:setupGlassesHeartbeat] Heartbeat established for glasses connection`,
@@ -188,6 +227,66 @@ export class UserSession {
         `[UserSession:clearGlassesHeartbeat] Heartbeat cleared for glasses connection`,
       );
     }
+
+    // Clear pong timeout as well
+    if (this.pongTimeoutTimer) {
+      clearTimeout(this.pongTimeoutTimer);
+      this.pongTimeoutTimer = undefined;
+    }
+  }
+
+  /**
+   * Reset the pong timeout timer
+   */
+  private resetPongTimeout(): void {
+    // Skip if pong timeout is disabled
+    if (!UserSession.PONG_TIMEOUT_ENABLED) {
+      this.logger.debug(
+        "[UserSession:resetPongTimeout] Pong timeout disabled by PONG_TIMEOUT_ENABLED=false",
+      );
+      return;
+    }
+
+    // Clear existing timer
+    if (this.pongTimeoutTimer) {
+      clearTimeout(this.pongTimeoutTimer);
+    }
+
+    // Set new timeout
+    this.pongTimeoutTimer = setTimeout(() => {
+      const timeSinceLastPong = this.lastPongTime
+        ? Date.now() - this.lastPongTime
+        : this.PONG_TIMEOUT_MS;
+
+      this.logger.error(
+        `[UserSession:pongTimeout] Phone connection timeout - no pong for ${timeSinceLastPong}ms from user ${this.userId}`,
+      );
+
+      // Mark connections as dead
+      this.phoneConnected = false;
+      this.glassesConnected = false; // If phone is dead, glasses are unreachable
+
+      // Close the zombie WebSocket connection
+      if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+        this.logger.info(
+          `[UserSession:pongTimeout] Closing zombie WebSocket connection for user ${this.userId}`,
+        );
+        this.websocket.close(1001, "Ping timeout - no pong received");
+      }
+
+      // Clear the heartbeat since connection is dead
+      this.clearGlassesHeartbeat();
+
+      // Log the disconnection for debugging
+      this.logger.warn(
+        {
+          userId: this.userId,
+          phoneConnected: this.phoneConnected,
+          glassesConnected: this.glassesConnected,
+        },
+        `[UserSession:pongTimeout] Connection state updated after timeout`,
+      );
+    }, this.PONG_TIMEOUT_MS);
   }
 
   /**
@@ -363,7 +462,11 @@ export class UserSession {
                 capabilities: this.capabilities,
                 modelName: this.currentGlassesModel,
               },
-              `[UserSession:stopIncompatibleApps] App ${packageName} is now incompatible with ${this.currentGlassesModel} - missing required hardware: ${compatibilityResult.missingRequired.map((req) => req.type).join(", ")}`,
+              `[UserSession:stopIncompatibleApps] App ${packageName} is now incompatible with ${
+                this.currentGlassesModel
+              } - missing required hardware: ${compatibilityResult.missingRequired
+                .map((req) => req.type)
+                .join(", ")}`,
             );
           }
         } catch (error) {
@@ -602,9 +705,12 @@ export class UserSession {
    */
   relayAudioToApps(audioData: ArrayBuffer): void {
     try {
-      this.audioManager.processAudioData(audioData, false);
+      this.audioManager.processAudioData(audioData);
     } catch (error) {
-      this.logger.error({ error }, `Error relaying audio for user: ${this.userId}`);
+      this.logger.error(
+        { error },
+        `Error relaying audio for user: ${this.userId}`,
+      );
     }
   }
 
@@ -615,13 +721,18 @@ export class UserSession {
     try {
       const requestId = audioResponse.requestId;
       if (!requestId) {
-        this.logger.error({ audioResponse }, "Audio play response missing requestId");
+        this.logger.error(
+          { audioResponse },
+          "Audio play response missing requestId",
+        );
         return;
       }
       const packageName = this.audioPlayRequestMapping.get(requestId);
       if (!packageName) {
         this.logger.warn(
-          `🔊 [UserSession] No app mapping found for audio request ${requestId}. Available: ${Array.from(this.audioPlayRequestMapping.keys()).join(", ")}`,
+          `🔊 [UserSession] No app mapping found for audio request ${requestId}. Available: ${Array.from(
+            this.audioPlayRequestMapping.keys(),
+          ).join(", ")}`,
         );
         return;
       }
@@ -658,7 +769,10 @@ export class UserSession {
         `🔊 [UserSession] Cleaned up audio request mapping for ${requestId}. Remaining: ${this.audioPlayRequestMapping.size}`,
       );
     } catch (error) {
-      this.logger.error({ error, audioResponse }, `Error relaying audio play response`);
+      this.logger.error(
+        { error, audioResponse },
+        `Error relaying audio play response`,
+      );
     }
   }
 
@@ -735,6 +849,7 @@ export class UserSession {
     // Clean up all resources
     if (this.appManager) this.appManager.dispose();
     if (this.audioManager) this.audioManager.dispose();
+    if (this.liveKitManager) this.liveKitManager.dispose();
     if (this.microphoneManager) this.microphoneManager.dispose();
     if (this.displayManager) this.displayManager.dispose();
     if (this.dashboardManager) this.dashboardManager.dispose();

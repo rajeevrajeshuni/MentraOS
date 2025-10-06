@@ -6,18 +6,20 @@
  */
 import express, { type Express } from "express";
 import path from "path";
+import fs from "fs";
 import { AppSession } from "../session/index";
 import { createAuthMiddleware } from "../webview";
+import { newSDKUpdate } from "../../constants/log-messages/updates";
+
 import {
   WebhookRequest,
-  WebhookRequestType,
   WebhookResponse,
   SessionWebhookRequest,
   StopWebhookRequest,
-  isSessionWebhookRequest,
-  isStopWebhookRequest,
   ToolCall,
+  WebhookRequestType,
 } from "../../types";
+
 import { Logger } from "pino";
 import { logger as rootLogger } from "../../logging/logger";
 import axios from "axios";
@@ -45,6 +47,9 @@ export interface AppServerConfig {
   apiKey: string;
   /** 🌐 Port number for the server (default: 7010) */
   port?: number;
+
+  /** Cloud API URL (default: 'api.mentra.glass') */
+  cloudApiUrl?: string;
 
   /** 🛣️ [DEPRECATED] do not set: The SDK will automatically expose an endpoint at '/webhook' */
   webhookPath?: string;
@@ -133,7 +138,10 @@ export class AppServer {
     this.app.use(
       cookieParser(
         this.config.cookieSecret ||
-          `AOS_${this.config.packageName}_${this.config.apiKey.substring(0, 8)}`,
+          `AOS_${this.config.packageName}_${this.config.apiKey.substring(
+            0,
+            8,
+          )}`,
       ),
     );
 
@@ -147,7 +155,10 @@ export class AppServer {
         },
         cookieSecret:
           this.config.cookieSecret ||
-          `AOS_${this.config.packageName}_${this.config.apiKey.substring(0, 8)}`,
+          `AOS_${this.config.packageName}_${this.config.apiKey.substring(
+            0,
+            8,
+          )}`,
       }) as any,
     );
 
@@ -242,7 +253,7 @@ export class AppServer {
    */
   public start(): Promise<void> {
     return new Promise((resolve) => {
-      this.app.listen(this.config.port, () => {
+      this.app.listen(this.config.port, async () => {
         this.logger.info(
           `🎯 App server running at http://localhost:${this.config.port}`,
         );
@@ -251,6 +262,59 @@ export class AppServer {
             `📂 Serving static files from ${this.config.publicDir}`,
           );
         }
+
+        // 🔑 Grab SDK version
+        try {
+          // Look for the actual installed @mentra/sdk package.json in node_modules
+          const sdkPkgPath = path.resolve(
+            process.cwd(),
+            "node_modules/@mentra/sdk/package.json",
+          );
+
+          let currentVersion = "unknown";
+
+          if (fs.existsSync(sdkPkgPath)) {
+            const sdkPkg = JSON.parse(fs.readFileSync(sdkPkgPath, "utf-8"));
+
+            // Get the actual installed version
+            currentVersion = sdkPkg.version || "not-found"; // located in the node module
+          } else {
+            this.logger.debug(
+              { sdkPkgPath },
+              "No @mentra/sdk package.json found at path",
+            );
+          }
+
+          // this.logger.debug(`Developer is using SDK version: ${currentVersion}`);
+
+          // Fetch latest SDK version from the API endpoint
+          let latest: string | null = null;
+          try {
+            const cloudHost = "api.mentra.glass";
+            const response = await axios.get(
+              `https://${cloudHost}/api/sdk/version`,
+              { timeout: 3000 }, // 3 second timeout
+            );
+            if (response.data && response.data.success && response.data.data) {
+              latest = response.data.data.latest;
+            }
+          } catch {
+            this.logger.debug(
+              "Failed to fetch latest SDK version - skipping version check (offline or API unavailable)",
+            );
+          }
+
+          if (currentVersion === "not-found") {
+            this.logger.warn(
+              `⚠️ @mentra/sdk not found in your project dependencies. Please install it with: npm install @mentra/sdk`,
+            );
+          } else if (latest && latest !== currentVersion) {
+            this.logger.warn(newSDKUpdate(latest));
+          }
+        } catch (err) {
+          this.logger.error(err, "Version check failed");
+        }
+
         resolve();
       });
     });
@@ -316,11 +380,11 @@ export class AppServer {
         const webhookRequest = req.body as WebhookRequest;
 
         // Handle session request
-        if (isSessionWebhookRequest(webhookRequest)) {
+        if (webhookRequest.type === WebhookRequestType.SESSION_REQUEST) {
           await this.handleSessionRequest(webhookRequest, res);
         }
         // Handle stop request
-        else if (isStopWebhookRequest(webhookRequest)) {
+        else if (webhookRequest.type === WebhookRequestType.STOP_REQUEST) {
           await this.handleStopRequest(webhookRequest, res);
         }
         // Unknown webhook type
@@ -430,16 +494,14 @@ export class AppServer {
 
           // Call onStop with session end reason
           // This allows apps to clean up resources when the user's session ends
-          this.onStop(
-            sessionId,
-            userId,
-            "User session ended",
-          ).catch((error) => {
-            this.logger.error(
-              error,
-              `❌ Error in onStop handler for session end:`,
-            );
-          });
+          this.onStop(sessionId, userId, "User session ended").catch(
+            (error) => {
+              this.logger.error(
+                error,
+                `❌ Error in onStop handler for session end:`,
+              );
+            },
+          );
         }
         // Check if this is a permanent disconnection after exhausted reconnection attempts
         else if (info.permanent === true) {
@@ -448,7 +510,8 @@ export class AppServer {
           );
 
           // Keep track of the original session before removal
-          const session = this.activeSessions.get(sessionId);
+          // const session = this.activeSessions.get(sessionId);
+          const _session = this.activeSessions.get(sessionId);
 
           // Call onStop with a reconnection failure reason
           this.onStop(
@@ -555,7 +618,7 @@ export class AppServer {
         const userSessions: AppSession[] = [];
 
         // Look through all active sessions
-        this.activeSessions.forEach((session, sessionId) => {
+        this.activeSessions.forEach((session, _sessionId) => {
           // Check if the session has this userId (not directly accessible)
           // We're relying on the webhook handler to have already verified this
           if (session.userId === userIdForSettings) {
@@ -664,24 +727,19 @@ export class AppServer {
       upload.single("photo"),
       async (req: any, res: any) => {
         try {
-          const { requestId, type } = req.body;
+          const { requestId, type, success, errorCode, errorMessage } =
+            req.body;
           const photoFile = req.file;
 
+          console.log("Received photo response: ", req.body);
+
           this.logger.info(
-            { requestId, type },
-            `📸 Received photo upload: ${requestId}`,
+            { requestId, type, success, errorCode },
+            `📸 Received photo response: ${requestId} (type: ${type})`,
           );
 
-          if (!photoFile) {
-            this.logger.error({ requestId }, "No photo file in upload");
-            return res.status(400).json({
-              success: false,
-              error: "No photo file provided",
-            });
-          }
-
           if (!requestId) {
-            this.logger.error("No requestId in photo upload");
+            this.logger.error("No requestId in photo response");
             return res.status(400).json({
               success: false,
               error: "No requestId provided",
@@ -698,6 +756,41 @@ export class AppServer {
             return res.status(404).json({
               success: false,
               error: "No active session found for this photo request",
+            });
+          }
+
+          // Handle error response (no photo file, but has error info)
+          if (type === "photo_error" || !success) {
+            // Create error response object
+            const errorResponse = {
+              requestId,
+              success: false as const,
+              error: {
+                code: errorCode || "UNKNOWN_ERROR",
+                message: errorMessage || "Unknown error occurred",
+              },
+            };
+
+            // Deliver error to the session (logging happens in camera module)
+            session.camera.handlePhotoError(errorResponse);
+
+            // Respond to ASG client
+            return res.json({
+              success: true,
+              requestId,
+              message: "Photo error received successfully",
+            });
+          }
+
+          // Handle successful photo upload
+          if (!photoFile) {
+            this.logger.error(
+              { requestId },
+              "No photo file in successful upload",
+            );
+            return res.status(400).json({
+              success: false,
+              error: "No photo file provided for successful upload",
             });
           }
 
@@ -721,10 +814,10 @@ export class AppServer {
             message: "Photo received successfully",
           });
         } catch (error) {
-          this.logger.error(error, "❌ Error handling photo upload");
+          this.logger.error(error, "❌ Error handling photo response");
           res.status(500).json({
             success: false,
-            error: "Internal server error processing photo upload",
+            error: "Internal server error processing photo response",
           });
         }
       },
@@ -738,7 +831,9 @@ export class AppServer {
   private setupMentraAuthRedirect(): void {
     this.app.get("/mentra-auth", (req, res) => {
       // Redirect to the account.mentra.glass OAuth flow with the app's package name
-      const authUrl = `https://account.mentra.glass/auth?packagename=${encodeURIComponent(this.config.packageName)}`;
+      const authUrl = `https://account.mentra.glass/auth?packagename=${encodeURIComponent(
+        this.config.packageName,
+      )}`;
 
       this.logger.info(`🔐 Redirecting to MentraOS OAuth flow: ${authUrl}`);
 
@@ -752,7 +847,7 @@ export class AppServer {
   private findSessionByPhotoRequestId(
     requestId: string,
   ): AppSession | undefined {
-    for (const [sessionId, session] of this.activeSessions) {
+    for (const [_sessionId, session] of this.activeSessions) {
       if (session.camera.hasPhotoPendingRequest(requestId)) {
         return session;
       }

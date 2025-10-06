@@ -7,7 +7,9 @@ public interface AugmentOsActionsCallback {
     void requestPing();
     void requestStatus();
     void searchForCompatibleDeviceNames(String modelName);
-    void connectToWearable(String modelName, String deviceName);
+
+    void connectToWearable(String modelName, String deviceName, String deviceAddress);
+
     void disconnectWearable(String wearableId);
     void forgetSmartGlasses();
     void startApp(String packageName);
@@ -20,6 +22,7 @@ public interface AugmentOsActionsCallback {
     void setBypassVadForDebugging(boolean bypassVadForDebugging);
     void setBypassAudioEncodingForDebugging(boolean bypassAudioEncodingForDebugging);
     void setEnforceLocalTranscription(boolean enforceLocalTranscription);
+    void onEnableOfflineMode(boolean enabled);
     void setAlwaysOnStatusBarEnabled(boolean alwaysOnStatusBarEnabled);
     void setPowerSavingMode(boolean powerSavingMode);
     void installAppFromRepository(String repository, String packageName) throws JSONException;
@@ -38,9 +41,11 @@ public interface AugmentOsActionsCallback {
     void setGlassesWifiCredentials(String ssid, String password);
     void setGlassesHotspotState(boolean enabled);
     void requestWifiScan();
+    void disconnectFromWifi();
     void queryGalleryStatus();
     void setPreferredMic(String mic);
     void setButtonMode(String mode);
+    void sendGalleryModeActive(boolean active);
     void setButtonPhotoSize(String size);
     void setButtonVideoSettings(int width, int height, int fps);
     void setButtonCameraLed(boolean enabled);
@@ -50,6 +55,16 @@ public interface AugmentOsActionsCallback {
     void onAudioStopRequest(JSONObject audioStopParams);
     void simulateHeadPosition(String position);
     void simulateButtonPress(String buttonId, String pressType);
+
+    void onDisplayTextNotified(String text, int size, int x, int y);
+
+    void onDisplayImageNotified(String imageType, String imageSize);
+
+    void clearDisplay();
+
+    void setLc3AudioEnabled(boolean enabled);
+    void updateSettings(JSONObject newSettings);
+
     void handleNotificationDismissal(JSONObject dismissalData);
     void startBufferRecording();
     void stopBufferRecording();

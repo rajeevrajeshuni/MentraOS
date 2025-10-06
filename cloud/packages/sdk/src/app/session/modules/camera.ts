@@ -14,7 +14,6 @@ import {
   RtmpStreamStatus,
   isRtmpStreamStatus,
   ManagedStreamStatus,
-  isManagedStreamStatus,
   StreamStatusCheckResponse,
 } from "../../../types";
 import {
@@ -30,6 +29,7 @@ import {
   ManagedStreamOptions,
   ManagedStreamResult,
 } from "./camera-managed-extension";
+import { cameraWarnLog } from "../../../utils/permissions-utils";
 
 /**
  * Options for photo requests
@@ -172,6 +172,8 @@ export class CameraModule {
    */
   async requestPhoto(options?: PhotoRequestOptions): Promise<PhotoData> {
     return new Promise((resolve, reject) => {
+      const baseUrl = this.session?.getHttpsServerUrl?.() || "";
+      cameraWarnLog(baseUrl, this.packageName, "requestPhoto");
       try {
         console.log("DEBUG: requestPhoto options:", options);
 
@@ -296,6 +298,45 @@ export class CameraModule {
   }
 
   /**
+   * ❌ Handle photo error from /photo-upload endpoint
+   *
+   * This method is called internally when a photo error response is received.
+   * It rejects the corresponding pending promise with the error information.
+   *
+   * @param errorResponse - The error response received
+   * @internal This method is used internally by AppSession
+   */
+  handlePhotoError(errorResponse: {
+    requestId: string;
+    success: false;
+    error: {
+      code: string;
+      message: string;
+    };
+  }): void {
+    const { requestId, error } = errorResponse;
+    const pendingRequest = this.pendingPhotoRequests.get(requestId);
+
+    if (pendingRequest) {
+      this.logger.error(
+        { requestId, errorCode: error.code, errorMessage: error.message },
+        `📸 Photo capture failed: ${error.code} - ${error.message}`,
+      );
+
+      // Reject the promise with the error information
+      pendingRequest.reject(`${error.code}: ${error.message}`);
+
+      // Clean up
+      this.pendingPhotoRequests.delete(requestId);
+    } else {
+      this.logger.warn(
+        { requestId, errorCode: error.code, errorMessage: error.message },
+        `📸 Received photo error for unknown request ID: ${requestId}`,
+      );
+    }
+  }
+
+  /**
    * 🔍 Check if there's a pending photo request for the given request ID
    *
    * @param requestId - The request ID to check
@@ -383,6 +424,12 @@ export class CameraModule {
     this.logger.info(
       { rtmpUrl: options.rtmpUrl },
       `📹 RTMP stream request starting`,
+    );
+
+    cameraWarnLog(
+      this.session.getHttpsServerUrl?.(),
+      this.packageName,
+      "startStream",
     );
 
     if (!options.rtmpUrl) {

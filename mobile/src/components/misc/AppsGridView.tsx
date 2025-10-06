@@ -1,5 +1,5 @@
-import React, {useState, useRef, useCallback, useMemo} from "react"
-import {View, ScrollView, TouchableOpacity, ViewStyle, TextStyle, Dimensions, FlatList, Alert} from "react-native"
+import {useState, useRef, useCallback, useMemo, FC, memo} from "react"
+import {View, TouchableOpacity, ViewStyle, TextStyle, Dimensions, FlatList, Alert} from "react-native"
 import Popover from "react-native-popover-view"
 import {Text} from "@/components/ignite"
 import AppIcon from "./AppIcon"
@@ -9,7 +9,8 @@ import {translate} from "@/i18n"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import EmptyAppsView from "@/components/home/EmptyAppsView"
 import {TreeIcon} from "assets/icons/component/TreeIcon"
-import {AppletInterface, AppletPermission} from "@/contexts/AppletStatusProvider"
+import {AppletInterface, AppletPermission, isOfflineApp} from "@/types/AppletTypes"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 // Constants at the top for easy configuration
 const GRID_COLUMNS = 4
@@ -34,17 +35,29 @@ interface AppsGridViewProps {
 }
 
 // Separate component for the popover to improve performance and maintainability
-const AppPopover: React.FC<{
+const AppPopover: FC<{
   app: AppletInterface | null
   visible: boolean
-  anchorRef: React.Component | null
+  anchorRef: any
   onClose: () => void
+  onCloseComplete: () => void
   onStartStop: () => void
   onOpenSettings: () => void
   onOpenWebView: () => void
   themed: (style: any) => any
   theme: any
-}> = ({app, visible, anchorRef, onClose, onStartStop, onOpenSettings, onOpenWebView, themed, theme}) => {
+}> = ({
+  app,
+  visible,
+  anchorRef,
+  onClose,
+  onCloseComplete,
+  onStartStop,
+  onOpenSettings,
+  onOpenWebView,
+  themed,
+  theme,
+}) => {
   if (!app || !anchorRef || !visible) return null
 
   return (
@@ -52,6 +65,7 @@ const AppPopover: React.FC<{
       from={anchorRef}
       isVisible={visible}
       onRequestClose={onClose}
+      onCloseComplete={onCloseComplete}
       popoverStyle={themed($popoverStyle)}
       backgroundStyle={{backgroundColor: "rgba(0, 0, 0, 0.5)"}}
       animationConfig={{duration: 200}}
@@ -93,10 +107,10 @@ const AppPopover: React.FC<{
 }
 
 // Separate component for grid items to improve performance
-const GridItem: React.FC<{
+const GridItem: FC<{
   item: AppletInterface
   onPress: (app: AppletInterface) => void
-  setRef: (ref: React.Component | null) => void
+  setRef: (ref: any) => void
   themed: (style: any) => any
   theme: any
 }> = ({item, onPress, setRef, themed, theme}) => {
@@ -113,6 +127,7 @@ const GridItem: React.FC<{
 
   const isForeground = item.type === "standard"
   const isOffline = item.isOnline === false
+  const isOfflineApp = item.type === "offline"
 
   return (
     <TouchableOpacity ref={setRef} style={themed($gridItem)} onPress={handlePress} activeOpacity={0.7}>
@@ -128,6 +143,11 @@ const GridItem: React.FC<{
             <TreeIcon size={theme.spacing.md} color={theme.colors.text} />
           </View>
         )}
+        {isOfflineApp && (
+          <View style={themed($offlineAppIndicator)}>
+            <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
+          </View>
+        )}
       </View>
       <Text
         text={item.name}
@@ -138,7 +158,7 @@ const GridItem: React.FC<{
   )
 }
 
-export const AppsGridViewRoot: React.FC<AppsGridViewProps> = ({
+export const AppsGridViewRoot: FC<AppsGridViewProps> = ({
   apps,
   onStartApp,
   onStopApp,
@@ -146,9 +166,10 @@ export const AppsGridViewRoot: React.FC<AppsGridViewProps> = ({
   onOpenWebView,
 }) => {
   const {themed, theme} = useAppTheme()
+  const {push} = useNavigationHistory()
   const [selectedApp, setSelectedApp] = useState<AppletInterface | null>(null)
   const [popoverVisible, setPopoverVisible] = useState(false)
-  const touchableRefs = useRef<Map<string, React.Component | null>>(new Map())
+  const touchableRefs = useRef<Map<string, any>>(new Map())
 
   // Maintenance dialog for offline apps
   const showMaintenanceDialog = useCallback(
@@ -191,8 +212,20 @@ export const AppsGridViewRoot: React.FC<AppsGridViewProps> = ({
 
   const handleAppPress = useCallback(
     (app: AppletInterface) => {
+      // Prevent opening if another popover is already visible
+      if (popoverVisible) {
+        return
+      }
+
       const ref = touchableRefs.current.get(app.packageName)
       if (ref) {
+        // Handle offline apps - activate only
+        if (isOfflineApp(app)) {
+          // Activate the app (make it appear in active apps)
+          onStartApp?.(app.packageName)
+          return
+        }
+
         // If app is offline, show maintenance dialog instead of popover
         if (app.isOnline === false) {
           showMaintenanceDialog(app)
@@ -202,13 +235,15 @@ export const AppsGridViewRoot: React.FC<AppsGridViewProps> = ({
         setPopoverVisible(true)
       }
     },
-    [showMaintenanceDialog],
+    [showMaintenanceDialog, popoverVisible, push],
   )
 
   const handlePopoverClose = useCallback(() => {
     setPopoverVisible(false)
-    // Delay clearing selectedApp to prevent flicker
-    setTimeout(() => setSelectedApp(null), 200)
+  }, [])
+
+  const handlePopoverCloseComplete = useCallback(() => {
+    setSelectedApp(null)
   }, [])
 
   const handleStartStop = useCallback(() => {
@@ -252,7 +287,7 @@ export const AppsGridViewRoot: React.FC<AppsGridViewProps> = ({
   }, [selectedApp, onOpenWebView, handlePopoverClose])
 
   const setItemRef = useCallback(
-    (packageName: string) => (ref: React.Component | null) => {
+    (packageName: string) => (ref: any) => {
       if (packageName) {
         if (ref) {
           touchableRefs.current.set(packageName, ref)
@@ -313,6 +348,7 @@ export const AppsGridViewRoot: React.FC<AppsGridViewProps> = ({
         visible={popoverVisible}
         anchorRef={currentAnchorRef || null}
         onClose={handlePopoverClose}
+        onCloseComplete={handlePopoverCloseComplete}
         onStartStop={handleStartStop}
         onOpenSettings={handleOpenSettings}
         onOpenWebView={handleOpenWebView}
@@ -323,7 +359,7 @@ export const AppsGridViewRoot: React.FC<AppsGridViewProps> = ({
   )
 }
 
-export const AppsGridView = React.memo(AppsGridViewRoot)
+export const AppsGridView = memo(AppsGridViewRoot)
 
 // Styles remain the same but with consistent sizing using constants
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -360,6 +396,20 @@ const $foregroundIndicator: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   alignItems: "center",
   borderRadius: spacing.md,
   backgroundColor: colors.palette.primary400,
+  borderWidth: 2,
+  borderColor: colors.background,
+})
+
+const $offlineAppIndicator: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  position: "absolute",
+  right: -spacing.xxs,
+  bottom: 0,
+  width: spacing.lg,
+  height: spacing.lg,
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: spacing.md,
+  backgroundColor: colors.palette.secondary400,
   borderWidth: 2,
   borderColor: colors.background,
 })

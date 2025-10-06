@@ -6,7 +6,7 @@ import {
   GlassesToCloudMessageType,
 } from "../message-types";
 import { ExtendedStreamType, StreamType } from "../streams";
-import { AppSettings, AppConfig, PermissionType } from "../models";
+import { AppSettings, AppConfig } from "../models";
 import { DashboardMode } from "../dashboard";
 import { Capabilities } from "../capabilities";
 import {
@@ -530,4 +530,27 @@ export interface AppDirectMessageResponse extends BaseMessage {
   success: boolean;
   error?: string;
   targetUserId: string;
+}
+
+
+
+//===========================================================
+// Cloud-to-Sdk Communication Response Messages
+//===========================================================
+
+/*
+*  Permission data structures for permission fetch responses
+*/
+export interface Permission {
+  type: string; // or a union/enum if you want stricter typing
+  description: string;
+  _id: string;
+}
+
+/*
+*  Package permissions response structure
+*/
+export interface PackagePermissions {
+  packageName: string;
+  permissions: Permission[];
 }

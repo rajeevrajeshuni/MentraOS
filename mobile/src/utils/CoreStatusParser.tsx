@@ -24,6 +24,7 @@ export interface OtaProgress {
 export interface Glasses {
   model_name: string
   battery_level: number
+  is_charging: boolean
   glasses_use_wifi: boolean
   glasses_wifi_connected: boolean
   glasses_wifi_ssid: string
@@ -91,6 +92,8 @@ export interface CoreInfo {
   puck_battery_life: number | null
   puck_charging_status: boolean
   default_wearable: string | null
+  default_wearable_name: string | null
+  default_wearable_address: string | null
   sensing_enabled: boolean
   power_saving_mode: boolean
   force_core_onboard_mic: boolean
@@ -103,6 +106,8 @@ export interface CoreInfo {
   always_on_status_bar_enabled: boolean
   metric_system_enabled: boolean
   is_searching: boolean
+  protobuf_schema_version: string
+  glasses_protobuf_version: string
 }
 
 export interface CoreStatus {
@@ -137,6 +142,8 @@ export class CoreStatusParser {
       always_on_status_bar_enabled: false,
       metric_system_enabled: true,
       is_searching: false,
+      protobuf_schema_version: "Unknown",
+      glasses_protobuf_version: "Unknown",
     },
     glasses_info: null,
     glasses_settings: {
@@ -188,6 +195,7 @@ export class CoreStatusParser {
     glasses_info: {
       model_name: "Even Realities G1",
       battery_level: 60,
+      is_charging: false,
       glasses_use_wifi: false,
       glasses_wifi_connected: false,
       glasses_wifi_ssid: "",
@@ -266,11 +274,14 @@ export class CoreStatusParser {
           always_on_status_bar_enabled: status.core_info.always_on_status_bar_enabled ?? false,
           metric_system_enabled: status.core_info.metric_system_enabled ?? true,
           is_searching: status.core_info.is_searching ?? false,
+          protobuf_schema_version: status.core_info.protobuf_schema_version ?? "Unknown",
+          glasses_protobuf_version: status.core_info.glasses_protobuf_version ?? "Unknown",
         },
         glasses_info: status.connected_glasses
           ? {
               model_name: glassesInfo.model_name,
               battery_level: glassesInfo.battery_level,
+              is_charging: glassesInfo.is_charging ?? false,
               glasses_use_wifi: glassesInfo.glasses_use_wifi || false,
               glasses_wifi_connected: glassesInfo.glasses_wifi_connected || false,
               glasses_wifi_ssid: glassesInfo.glasses_wifi_ssid || "",

@@ -1,28 +1,16 @@
 // SelectGlassesBluetoothScreen.tsx
 
-import React, {useEffect, useMemo, useRef, useState, useCallback} from "react"
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Platform,
-  Alert,
-  ViewStyle,
-  BackHandler,
-} from "react-native"
-import {useNavigation, useRoute} from "@react-navigation/native" // <<--- import useRoute
+import {useEffect, useMemo, useRef, useState, useCallback} from "react"
+import {View, TouchableOpacity, ScrollView, Platform, ViewStyle, BackHandler} from "react-native"
 import {useFocusEffect} from "@react-navigation/native"
 import Icon from "react-native-vector-icons/FontAwesome"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import bridge from "@/bridge/MantleBridge"
 import {MOCK_CONNECTION} from "@/consts"
-import {NavigationProps} from "@/components/misc/types"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 import PairingDeviceInfo from "@/components/misc/PairingDeviceInfo"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {useSearchResults} from "@/contexts/SearchResultsContext"
+import {useSearchResults, SearchResultDevice} from "@/contexts/SearchResultsContext"
 import {requestFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 import showAlert from "@/utils/AlertUtils"
 import {router, useLocalSearchParams} from "expo-router"
@@ -33,18 +21,17 @@ import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootin
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import Animated, {useAnimatedStyle, useSharedValue, withDelay, withTiming} from "react-native-reanimated"
-import {saveSetting, SETTINGS_KEYS} from "@/utils/SettingsHelper"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 
 export default function SelectGlassesBluetoothScreen() {
   const {status} = useCoreStatus()
-  const navigation = useNavigation<NavigationProps>()
   const {searchResults, setSearchResults} = useSearchResults()
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
-  const {goBack, push, clearHistory, navigate, replace} = useNavigationHistory()
+  const {goBack, push, clearHistory, replace} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   // Create a ref to track the current state of searchResults
-  const searchResultsRef = useRef<string[]>(searchResults)
+  const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
 
   const scrollViewOpacity = useSharedValue(0)
   const scrollViewAnimatedStyle = useAnimatedStyle(() => ({
@@ -61,7 +48,7 @@ export default function SelectGlassesBluetoothScreen() {
 
   // Clear search results when screen comes into focus to prevent stale data
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       setSearchResults([])
     }, [setSearchResults]),
   )
@@ -111,7 +98,15 @@ export default function SelectGlassesBluetoothScreen() {
   const backHandlerRef = useRef<any>(null)
 
   useEffect(() => {
-    const handleSearchResult = ({modelName, deviceName}: {modelName: string; deviceName: string}) => {
+    const handleSearchResult = ({
+      modelName,
+      deviceName,
+      deviceAddress,
+    }: {
+      modelName: string
+      deviceName: string
+      deviceAddress: string
+    }) => {
       // console.log("GOT SOME SEARCH RESULTS:");
       // console.log("ModelName: " + modelName);
       // console.log("DeviceName: " + deviceName);
@@ -122,13 +117,18 @@ export default function SelectGlassesBluetoothScreen() {
         // Quick hack // bugfix => we get NOTREQUIREDSKIP twice in some cases, so just stop after the initial one
         GlobalEventEmitter.removeListener("COMPATIBLE_GLASSES_SEARCH_RESULT", handleSearchResult)
 
-        triggerGlassesPairingGuide(glassesModelName as string, "")
+        triggerGlassesPairingGuide(glassesModelName as string, deviceName, deviceAddress as string)
         return
       }
 
       setSearchResults(prevResults => {
-        if (!prevResults.includes(deviceName)) {
-          return [...prevResults, deviceName]
+        const isDuplicate = deviceAddress
+          ? prevResults.some(device => device.deviceAddress === deviceAddress)
+          : prevResults.some(device => device.deviceName === deviceName)
+
+        if (!isDuplicate) {
+          const newDevice = new SearchResultDevice(modelName, deviceName, deviceAddress)
+          return [...prevResults, newDevice]
         }
         return prevResults
       })
@@ -190,10 +190,10 @@ export default function SelectGlassesBluetoothScreen() {
 
   useEffect(() => {
     // If puck gets d/c'd here, return to home
-    if (!status.core_info.puck_connected) {
-      router.dismissAll()
-      replace("/(tabs)/home")
-    }
+    //     if (!status.core_info.puck_connected) {
+    //       router.dismissAll()
+    //       replace("/(tabs)/home")
+    //     }
 
     // If pairing successful, return to home
     if (status.core_info.puck_connected && status.glasses_info?.model_name) {
@@ -202,7 +202,7 @@ export default function SelectGlassesBluetoothScreen() {
     }
   }, [status])
 
-  const triggerGlassesPairingGuide = async (glassesModelName: string, deviceName: string) => {
+  const triggerGlassesPairingGuide = async (glassesModelName: string, deviceName: string, deviceAddress: string) => {
     // On Android, we need to check both microphone and location permissions
     if (Platform.OS === "android") {
       // First check location permission, which is required for Bluetooth scanning on Android
@@ -234,18 +234,18 @@ export default function SelectGlassesBluetoothScreen() {
     }
 
     // update the preferredmic to be the phone mic:
+    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, "phone")
     bridge.sendSetPreferredMic("phone") // TODO: config: remove
-    saveSetting(SETTINGS_KEYS.preferred_mic, "phone")
 
     // All permissions granted, proceed with connecting to the wearable
     setTimeout(() => {
       // give some time to show the loader (otherwise it's a bit jarring)
-      bridge.sendConnectWearable(glassesModelName, deviceName)
+      bridge.sendConnectWearable(glassesModelName, deviceName, deviceAddress)
     }, 2000)
     push("/pairing/loading", {glassesModelName: glassesModelName})
   }
 
-  const glassesImage = useMemo(() => getGlassesImage(glassesModelName), [glassesModelName])
+  const _glassesImage = useMemo(() => getGlassesImage(glassesModelName), [glassesModelName])
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}} safeAreaEdges={["bottom"]}>
@@ -270,17 +270,17 @@ export default function SelectGlassesBluetoothScreen() {
           {/* DISPLAY LIST OF BLUETOOTH SEARCH RESULTS */}
           {searchResults && searchResults.length > 0 && (
             <>
-              {searchResults.map((deviceName, index) => (
+              {searchResults.map((device, index) => (
                 <TouchableOpacity
                   key={index}
                   style={themed($settingItem)}
                   onPress={() => {
-                    triggerGlassesPairingGuide(glassesModelName, deviceName)
+                    triggerGlassesPairingGuide(device.deviceMode, device.deviceName, device.deviceAddress)
                   }}>
                   {/* <Image source={glassesImage} style={styles.glassesImage} /> */}
                   <View style={styles.settingTextContainer}>
                     <Text
-                      text={`${glassesModelName}  ${deviceName}`}
+                      text={`${glassesModelName}  ${device.deviceName}`}
                       style={[
                         styles.label,
                         {
@@ -330,82 +330,24 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
   // More subtle elevation for Android
   elevation: 2,
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
 })
 
-const styles = StyleSheet.create({
+const styles = {
   contentContainer: {
     // alignItems: "center",
     // justifyContent: "center",
     height: 320,
     // backgroundColor: "red",
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20, // Consistent spacing at the top
-    overflow: "hidden", // Prevent content from creating visual lines
-  },
-  titleContainer: {
-    marginBottom: 10,
-    marginHorizontal: -20,
-    marginTop: -20,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  // Removed hardcoded theme colors - using dynamic styling
-  // titleContainerDark and titleContainerLight removed
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 5,
-    textAlign: "left",
-    // color moved to dynamic styling
-  },
-  // Removed hardcoded theme colors - using dynamic styling
-  // darkBackground, lightBackground, darkText, lightText, darkSubtext, lightSubtext, darkIcon, lightIcon removed
-  backButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 20,
-  },
-  backButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginLeft: 10,
-  },
   settingTextContainer: {
     flex: 1,
     paddingHorizontal: 10,
   },
   label: {
-    fontSize: 16, // bigger text size
+    fontSize: 16,
     fontWeight: "600",
     flexWrap: "wrap",
-  },
-  value: {
-    flexWrap: "wrap",
-    fontSize: 12,
     marginTop: 5,
   },
-  headerContainer: {
-    borderBottomWidth: 1,
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    // backgroundColor and borderBottomColor moved to dynamic styling
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: "600",
-    // color moved to dynamic styling
-  },
-  /**
-   * BIGGER, SEXIER IMAGES
-   */
-  glassesImage: {
-    width: 80, // bigger width
-    height: 50, // bigger height
-    resizeMode: "contain",
-    marginRight: 10,
-  },
-})
+} as const
