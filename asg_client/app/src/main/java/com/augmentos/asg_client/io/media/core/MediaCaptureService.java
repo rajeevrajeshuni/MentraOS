@@ -1488,6 +1488,13 @@ public class MediaCaptureService {
      * @param save Whether to keep the original photo on device
      */
     public void takePhotoForBleTransfer(String photoFilePath, String requestId, String bleImgId, boolean save, String size, boolean enableLed) {
+        // Check if RTMP streaming is active - photos cannot interrupt streams
+        if (RtmpStreamingService.isStreaming()) {
+            Log.e(TAG, "Cannot take photo - RTMP streaming active");
+            sendPhotoErrorResponse(requestId, "CAMERA_BUSY", "Camera busy with RTMP streaming");
+            return;
+        }
+
         // Store the save flag for this request
         photoSaveFlags.put(requestId, save);
         // Track requested size for BLE compression
@@ -1565,11 +1572,18 @@ public class MediaCaptureService {
      * This avoids taking a duplicate photo
      */
     private void reusePhotoForBleTransfer(String existingPhotoPath, String requestId, String bleImgId, boolean save, String size) {
+        // Check if RTMP streaming is active - avoid BLE transfers during streams
+        if (RtmpStreamingService.isStreaming()) {
+            Log.e(TAG, "Cannot transfer photo via BLE - RTMP streaming active");
+            sendPhotoErrorResponse(requestId, "CAMERA_BUSY", "Camera busy with RTMP streaming");
+            return;
+        }
+
         // Store the save flag for this request
         photoSaveFlags.put(requestId, save);
         // Track requested size for BLE compression
         photoRequestedSizes.put(requestId, size);
-        
+
         Log.d(TAG, "♻️ Reusing existing photo for BLE transfer: " + existingPhotoPath);
         
         // Notify that we're using an existing photo
