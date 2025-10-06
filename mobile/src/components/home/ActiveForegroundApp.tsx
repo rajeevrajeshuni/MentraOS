@@ -10,12 +10,15 @@ import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 import restComms from "@/managers/RestComms"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {attemptAppStop} from "@/utils/cameraAppProtection"
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const activeForegroundApp = useActiveForegroundApp()
   const {optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
+  const {status} = useCoreStatus()
 
   const handlePress = () => {
     if (activeForegroundApp) {
@@ -37,6 +40,11 @@ export const ActiveForegroundApp: React.FC = () => {
 
   const handleLongPress = () => {
     if (activeForegroundApp) {
+      // Check for Camera app protection
+      if (attemptAppStop(activeForegroundApp.packageName, status, theme)) {
+        return // Block the stop operation
+      }
+
       showAlert("Stop App", `Do you want to stop ${activeForegroundApp.name}?`, [
         {text: "Cancel", style: "cancel"},
         {
@@ -63,6 +71,11 @@ export const ActiveForegroundApp: React.FC = () => {
     event.stopPropagation()
 
     if (activeForegroundApp) {
+      // Check for Camera app protection
+      if (attemptAppStop(activeForegroundApp.packageName, status, theme)) {
+        return // Block the stop operation
+      }
+
       optimisticallyStopApp(activeForegroundApp.packageName)
 
       try {

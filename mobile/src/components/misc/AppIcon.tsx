@@ -1,8 +1,8 @@
 // AppIcon.tsx
-import React, {useEffect, useState} from "react"
+import {memo} from "react"
 import {View, TouchableOpacity, ViewStyle, ImageStyle, TextStyle, Platform, ActivityIndicator} from "react-native"
 import {Image} from "expo-image"
-import {AppletInterface} from "@/contexts/AppletStatusProvider"
+import {AppletInterface} from "@/types/AppletTypes"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
@@ -17,13 +17,13 @@ interface AppIconProps {
   hideLoadingIndicator?: boolean
 }
 
-const AppIcon: React.FC<AppIconProps> = ({app, onClick, style, showLabel = false, hideLoadingIndicator = false}) => {
+const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator = false}: AppIconProps) => {
   const {themed, theme} = useAppTheme()
 
   const WrapperComponent = onClick ? TouchableOpacity : View
 
-  const [newUi, setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
-  const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
+  const [newUi] = useSetting(SETTINGS_KEYS.new_ui)
+  const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
 
   return (
     <WrapperComponent
@@ -50,7 +50,7 @@ const AppIcon: React.FC<AppIconProps> = ({app, onClick, style, showLabel = false
             </View>
           )}
           <Image
-            source={{uri: app.logoURL}}
+            source={typeof app.logoURL === "string" ? {uri: app.logoURL} : app.logoURL}
             style={themed($icon)}
             contentFit="cover"
             transition={200}
@@ -65,7 +65,7 @@ const AppIcon: React.FC<AppIconProps> = ({app, onClick, style, showLabel = false
             </View>
           )}
           <Image
-            source={{uri: app.logoURL}}
+            source={typeof app.logoURL === "string" ? {uri: app.logoURL} : app.logoURL}
             style={[themed($icon), {borderRadius: 60, width: style?.width ?? 56, height: style?.height ?? 56}]}
             contentFit="cover"
             transition={200}
@@ -100,7 +100,7 @@ const $icon: ThemedStyle<ImageStyle> = () => ({
   resizeMode: "cover",
 })
 
-const $appName: ThemedStyle<TextStyle> = ({colors, isDark}) => ({
+const $appName: ThemedStyle<TextStyle> = ({isDark}) => ({
   fontSize: 11,
   fontWeight: "600",
   lineHeight: 12,
@@ -109,16 +109,4 @@ const $appName: ThemedStyle<TextStyle> = ({colors, isDark}) => ({
   color: isDark ? "#ced2ed" : "#000000",
 })
 
-const $squareBadge: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  borderRadius: 6,
-  height: 20,
-  justifyContent: "center",
-  position: "absolute",
-  right: 3,
-  top: -8,
-  width: 20,
-  zIndex: 3,
-})
-
-export default React.memo(AppIcon)
+export default memo(AppIcon)

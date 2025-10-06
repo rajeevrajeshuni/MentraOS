@@ -369,6 +369,7 @@ class Bridge: RCTEventEmitter {
             case send_wifi_credentials
             case set_hotspot_state
             case query_gallery_status
+            case send_gallery_mode_active
             case photo_request
             case start_buffer_recording
             case stop_buffer_recording
@@ -480,6 +481,13 @@ class Bridge: RCTEventEmitter {
                 case .query_gallery_status:
                     Bridge.log("CommandBridge: Querying gallery status")
                     m.queryGalleryStatus()
+                case .send_gallery_mode_active:
+                    guard let params = params, let active = params["active"] as? Bool else {
+                        Bridge.log("CommandBridge: send_gallery_mode_active invalid params")
+                        break
+                    }
+                    Bridge.log("CommandBridge: Sending gallery mode active: \(active)")
+                    m.sendGalleryModeActive(active)
                 case .photo_request:
                     guard let params = params,
                           let requestId = params["requestId"] as? String,

@@ -155,6 +155,8 @@ class G1: NSObject, SGCManager {
 
     func queryGalleryStatus() {}
 
+    func sendGalleryModeActive(_: Bool) {}
+
     func showDashboard() {}
 
     func setSilentMode(_: Bool) {}

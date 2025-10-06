@@ -96,6 +96,7 @@ protocol SGCManager {
     // MARK: - Gallery
 
     func queryGalleryStatus()
+    func sendGalleryModeActive(_ active: Bool)
 }
 
 extension SGCManager {

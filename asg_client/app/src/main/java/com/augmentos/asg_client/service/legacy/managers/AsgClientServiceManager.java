@@ -180,7 +180,6 @@ public class AsgClientServiceManager {
         try {
             asgSettings = new AsgSettings(context);
             Log.d(TAG, "✅ Settings initialized successfully");
-            Log.d(TAG, "📋 Button press mode on startup: " + asgSettings.getButtonPressMode().getValue());
         } catch (Exception e) {
             Log.e(TAG, "💥 Error initializing settings", e);
             throw e;
@@ -479,6 +478,21 @@ public class AsgClientServiceManager {
             }
         } else {
             Log.d(TAG, "⏭️ Web server enabled state unchanged - no action needed");
+        }
+    }
+
+    /**
+     * Get the current connection status from AsgClientService
+     * @return true if connected to phone, false if disconnected
+     */
+    public boolean isConnected() {
+        if (service != null) {
+            boolean connected = service.isConnected();
+            Log.d(TAG, "🔌 Connection status: " + (connected ? "CONNECTED" : "DISCONNECTED"));
+            return connected;
+        } else {
+            Log.w(TAG, "⚠️ AsgClientService reference is null - assuming disconnected");
+            return false;
         }
     }
 

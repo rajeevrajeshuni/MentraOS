@@ -1,16 +1,13 @@
 import {useCallback, useMemo} from "react"
-import {View, FlatList, TouchableOpacity, ViewStyle, ImageStyle, TextStyle} from "react-native"
-import {useRouter} from "expo-router"
+import {View, FlatList, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-import {
-  AppletInterface,
-  useActiveForegroundApp,
-  useAppStatus,
-  useNewUiForegroundApps,
-} from "@/contexts/AppletStatusProvider"
+import {useActiveForegroundApp, useAppStatus, useNewUiForegroundApps} from "@/contexts/AppletStatusProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
+import {isOfflineAppPackage} from "@/types/OfflineApps"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
@@ -28,7 +25,7 @@ interface GridItem extends AppletInterface {
 
 export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
-  const router = useRouter()
+  const {push} = useNavigationHistory()
   const foregroundApps = useNewUiForegroundApps()
   const activeForegroundApp = useActiveForegroundApp()
   const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
@@ -127,6 +124,13 @@ export const ForegroundAppsGrid: React.FC = () => {
     async (packageName: string) => {
       optimisticallyStopApp(packageName)
 
+      // Skip offline apps - they don't need server communication
+      if (isOfflineAppPackage(packageName)) {
+        console.log("Skipping offline app stop in ForegroundAppsGrid:", packageName)
+        clearPendingOperation(packageName)
+        return
+      }
+
       try {
         await restComms.stopApp(packageName)
         clearPendingOperation(packageName)
@@ -148,6 +152,16 @@ export const ForegroundAppsGrid: React.FC = () => {
       if (app.compatibility && !app.compatibility.isCompatible) return false
 
       return true
+    })
+
+    // Sort to put Camera app first, then alphabetical
+    inactiveApps.sort((a, b) => {
+      // Camera app always comes first
+      if (a.packageName === "com.mentra.camera") return -1
+      if (b.packageName === "com.mentra.camera") return 1
+
+      // Otherwise sort alphabetically
+      return a.name.localeCompare(b.name)
     })
 
     // Add "Get More Apps" as the last item
@@ -186,9 +200,17 @@ export const ForegroundAppsGrid: React.FC = () => {
   const handleAppPress = useCallback(
     async (app: GridItem) => {
       console.log("App pressed:", app.packageName, "isGetMoreApps:", app.isGetMoreApps)
+
+      // Handle offline apps - activate only
+      if (isOfflineApp(app)) {
+        // Activate the app (make it appear in active apps)
+        await startApp(app.packageName)
+        return
+      }
+
       // Handle "Get More Apps" specially
       if (app.isGetMoreApps) {
-        router.push("/store")
+        push("/store")
         return
       }
 
@@ -215,7 +237,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         await startApp(app.packageName)
       }
     },
-    [activeForegroundApp, router, startApp, stopApp],
+    [activeForegroundApp, push, startApp, stopApp],
   )
 
   const renderItem = useCallback(
@@ -236,6 +258,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       }
 
       const isOffline = item.isOnline === false
+      const isOfflineApp = item.type === "offline"
 
       return (
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
@@ -244,6 +267,11 @@ export const ForegroundAppsGrid: React.FC = () => {
             {isOffline && (
               <View style={themed($offlineBadge)}>
                 <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
+              </View>
+            )}
+            {isOfflineApp && (
+              <View style={themed($offlineAppIndicator)}>
+                <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
               </View>
             )}
           </View>
@@ -263,7 +291,7 @@ export const ForegroundAppsGrid: React.FC = () => {
     return (
       <View style={themed($container)}>
         <Text style={themed($emptyText)}>No foreground apps available</Text>
-        <TouchableOpacity style={themed($getMoreAppsButton)} onPress={() => router.push("/store")} activeOpacity={0.7}>
+        <TouchableOpacity style={themed($getMoreAppsButton)} onPress={() => push("/store")} activeOpacity={0.7}>
           <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.xs}} />
           <Text text="Get More Apps" style={themed($appName)} />
         </TouchableOpacity>
@@ -309,7 +337,7 @@ const $appContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginBottom: spacing.xs,
 })
 
-const $appIcon: ThemedStyle<ImageStyle> = ({spacing}) => ({
+const $appIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: 64,
   height: 64,
   borderRadius: spacing.sm,
@@ -339,6 +367,20 @@ const $offlineBadge: ThemedStyle<ViewStyle> = ({colors}) => ({
   backgroundColor: colors.background,
   borderRadius: 10,
   padding: 2,
+})
+
+const $offlineAppIndicator: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  position: "absolute",
+  right: -spacing.xxs,
+  bottom: 0,
+  width: spacing.lg,
+  height: spacing.lg,
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: spacing.md,
+  backgroundColor: colors.palette.secondary400,
+  borderWidth: 2,
+  borderColor: colors.background,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

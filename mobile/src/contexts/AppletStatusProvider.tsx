@@ -1,5 +1,6 @@
 import {createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef, useMemo} from "react"
 import {useAuth} from "@/contexts/AuthContext"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {deepCompare} from "@/utils/debugging"
 import showAlert from "@/utils/AlertUtils"
@@ -7,67 +8,11 @@ import {translate} from "@/i18n"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-
-export type AppPermissionType =
-  | "ALL"
-  | "MICROPHONE"
-  | "CAMERA"
-  | "CALENDAR"
-  | "LOCATION"
-  | "BACKGROUND_LOCATION"
-  | "READ_NOTIFICATIONS"
-  | "POST_NOTIFICATIONS"
-export interface AppletPermission {
-  description: string
-  type: AppPermissionType
-  required?: boolean
-}
-
-// Define the AppInterface based on AppI from SDK
-export interface AppletInterface {
-  packageName: string
-  name: string
-  developerName?: string
-  publicUrl?: string
-  isSystemApp?: boolean
-  uninstallable?: boolean
-  webviewURL?: string
-  logoURL: string
-  type: string // "standard", "background"
-  appStoreId?: string
-  developerId?: string
-  hashedEndpointSecret?: string
-  hashedApiKey?: string
-  description?: string
-  version?: string
-  settings?: Record<string, unknown>
-  isPublic?: boolean
-  appStoreStatus?: "DEVELOPMENT" | "SUBMITTED" | "REJECTED" | "PUBLISHED"
-  developerProfile?: {
-    company?: string
-    website?: string
-    contactEmail?: string
-    description?: string
-    logo?: string
-  }
-  permissions: AppletPermission[]
-  is_running?: boolean
-  loading?: boolean
-  compatibility?: {
-    isCompatible: boolean
-    missingRequired: Array<{
-      type: string
-      description?: string
-    }>
-    missingOptional: Array<{
-      type: string
-      description?: string
-    }>
-    message: string
-  }
-  // New optional isOnline from backend
-  isOnline?: boolean | null
-}
+import {AppletInterface} from "@/types/AppletTypes"
+import {getOfflineApps, isOfflineAppPackage} from "@/types/OfflineApps"
+import bridge from "@/bridge/MantleBridge"
+import {hasCamera} from "@/config/glassesFeatures"
+import {shouldBlockCameraAppStop} from "@/utils/cameraAppProtection"
 
 interface AppStatusContextType {
   appStatus: AppletInterface[]
@@ -84,7 +29,8 @@ const AppStatusContext = createContext<AppStatusContextType | undefined>(undefin
 export const AppStatusProvider = ({children}: {children: ReactNode}) => {
   const [appStatus, setAppStatus] = useState<AppletInterface[]>([])
   const {user} = useAuth()
-  const {theme} = useAppTheme()
+  const {theme, themeContext} = useAppTheme()
+  const {status} = useCoreStatus()
 
   // Keep track of active operations to prevent race conditions
   const pendingOperations = useRef<{[packageName: string]: "start" | "stop"}>({})
@@ -114,6 +60,9 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     try {
       const appsData = await restComms.getApps()
 
+      // Load camera app state from AsyncStorage ONCE before mapping
+      const savedCameraAppState = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.camera_app_running)
+
       // Merge existing running states with new data
       const mapped = appsData.map(app => {
         // shallow incomplete copy, just enough to render the list:
@@ -138,22 +87,110 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
         return applet
       })
 
+      // Get default wearable setting for compatibility check
+      const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+
       setAppStatus(currentAppStatus => {
-        const diff = deepCompare(currentAppStatus, mapped)
+        // Add offline apps to the beginning of the list (with compatibility check)
+        const offlineApps = getOfflineApps(status.glasses_info?.model_name, defaultWearable, themeContext === "dark")
+
+        const appsWithOffline = [...offlineApps, ...mapped]
+
+        // Preserve running state from current appStatus for offline apps
+        const offlineAppsWithState = appsWithOffline.map(app => {
+          // Check if this is an offline app
+          if (isOfflineAppPackage(app.packageName)) {
+            // Find existing state for this offline app
+            const existingApp = currentAppStatus.find((a: AppletInterface) => a.packageName === app.packageName)
+
+            // Preserve is_running and loading state if app was already in state
+            if (existingApp) {
+              const updatedApp = {
+                ...app,
+                is_running: existingApp.is_running,
+                loading: existingApp.loading,
+              }
+
+              // Special logic for camera app: if it's running, override compatibility to be compatible
+              if (app.packageName === "com.mentra.camera" && existingApp.is_running) {
+                updatedApp.compatibility = {
+                  isCompatible: true,
+                  missingRequired: [],
+                  missingOptional: [],
+                  message: "",
+                }
+              }
+
+              return updatedApp
+            }
+
+            // No existing state - restore from AsyncStorage for camera app
+            if (app.packageName === "com.mentra.camera") {
+              const restoredApp = {
+                ...app,
+                is_running: savedCameraAppState ?? false,
+                loading: false,
+              }
+
+              // If camera app is running, check if we have camera-capable glasses (connected or default)
+              if (savedCameraAppState) {
+                const wearableToCheck = status.glasses_info?.model_name || defaultWearable
+                const hasGlassesCamera = hasCamera(wearableToCheck)
+
+                if (hasGlassesCamera) {
+                  // Override compatibility to be compatible
+                  restoredApp.compatibility = {
+                    isCompatible: true,
+                    missingRequired: [],
+                    missingOptional: [],
+                    message: "",
+                  }
+                } else {
+                  restoredApp.is_running = false
+                  // Update AsyncStorage to reflect the stopped state
+                  useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, false)
+                }
+              }
+
+              return restoredApp
+            }
+          }
+
+          // Not an offline app or no existing state, return as-is
+          return app
+        })
+
+        const diff = deepCompare(currentAppStatus, offlineAppsWithState)
         if (diff.length === 0) {
           console.log("AppStatusProvider: Applet status did not change")
           //console.log(JSON.stringify(currentAppStatus, null, 2));
           return currentAppStatus
         }
-        return mapped
+        return offlineAppsWithState
       })
     } catch (err) {
       console.error("AppStatusProvider: Error fetching apps:", err)
     }
-  }, [user])
+  }, [user, themeContext])
 
   // Optimistically update app status when starting an app
   const optimisticallyStartApp = async (packageName: string, appType?: string) => {
+    // Check if this is an offline app first
+    if (isOfflineAppPackage(packageName)) {
+      console.log("Starting offline app:", packageName)
+      setAppStatus(currentStatus =>
+        currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: true, loading: false} : app)),
+      )
+
+      // Persist camera app state to AsyncStorage
+      if (packageName === "com.mentra.camera") {
+        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, true)
+        console.log("Camera app state persisted to AsyncStorage: true")
+      }
+
+      return
+    }
+
     // Cancel any pending stop operation for this app
     if (pendingOperations.current[packageName] === "stop") {
       delete pendingOperations.current[packageName]
@@ -173,6 +210,12 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
       for (const runningApp of runningStandardApps) {
         optimisticallyStopApp(runningApp.packageName)
+        // Skip offline apps - they don't need server communication
+        if (isOfflineAppPackage(runningApp.packageName)) {
+          console.log("Skipping offline app in foreground switch:", runningApp.packageName)
+          clearPendingOperation(runningApp.packageName)
+          continue
+        }
         try {
           restComms.stopApp(runningApp.packageName)
           clearPendingOperation(runningApp.packageName)
@@ -246,11 +289,31 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
   const stopAllApps = async () => {
     try {
       const runningApps = appStatus.filter(app => app.is_running)
+
       for (const app of runningApps) {
+        // Skip offline apps - they don't need server communication
+        if (isOfflineAppPackage(app.packageName)) {
+          // Special protection for Camera app when Mentra Live is connected
+          if (shouldBlockCameraAppStop(app.packageName, status)) {
+            console.log("🛡️ Camera app protection active in stopAllApps - skipping during Mentra Live connection")
+            continue
+          }
+          console.log("Skipping offline app in stopAllApps:", app.packageName)
+          continue
+        }
         await restComms.stopApp(app.packageName)
       }
-      // Update local state to reflect all apps are stopped
-      setAppStatus(currentStatus => currentStatus.map(app => (app.is_running ? {...app, is_running: false} : app)))
+
+      // Update local state to reflect all apps are stopped, but preserve Camera app if protected
+      setAppStatus(currentStatus =>
+        currentStatus.map(app => {
+          // Keep Camera app running if Mentra Live is connected
+          if (shouldBlockCameraAppStop(app.packageName, status)) {
+            return app // Keep current state
+          }
+          return app.is_running ? {...app, is_running: false} : app
+        }),
+      )
     } catch (error) {
       console.error("Error stopping all apps:", error)
       throw error
@@ -259,6 +322,29 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Optimistically update app status when stopping an app
   const optimisticallyStopApp = async (packageName: string) => {
+    // Check if this is an offline app first
+    if (isOfflineAppPackage(packageName)) {
+      console.log("Stopping offline app:", packageName)
+
+      // Special protection for Camera app when Mentra Live is connected
+      if (shouldBlockCameraAppStop(packageName, status)) {
+        console.log("🛡️ Camera app protection active - preventing stop during Mentra Live connection")
+        return // Block the stop operation
+      }
+
+      setAppStatus(currentStatus =>
+        currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: false, loading: false} : app)),
+      )
+
+      // Persist camera app state to AsyncStorage
+      if (packageName === "com.mentra.camera") {
+        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, false)
+        console.log("Camera app state persisted to AsyncStorage: false")
+      }
+
+      return
+    }
+
     // Cancel any pending start operation for this app
     if (pendingOperations.current[packageName] === "start") {
       delete pendingOperations.current[packageName]
@@ -339,6 +425,61 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     }, 2000)
     return () => clearInterval(interval)
   }, [appStatus.length])
+
+  // Watch camera app state and send gallery mode updates to glasses (Android only)
+  useEffect(() => {
+    const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
+
+    if (cameraApp) {
+      const isRunning = cameraApp.is_running ?? false
+      console.log(`Camera app state changed: is_running = ${isRunning}`)
+      bridge.sendGalleryModeActive(isRunning)
+    }
+  }, [appStatus])
+
+  // Re-send camera app state when glasses connect/reconnect
+  useEffect(() => {
+    const glassesModelName = status.glasses_info?.model_name
+
+    if (glassesModelName) {
+      // Glasses just connected - re-send current camera app state
+      console.log(`Glasses connected (${glassesModelName}) - re-syncing camera app state`)
+
+      const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
+      const isRunning = cameraApp?.is_running ?? false
+
+      console.log(`Re-sending gallery mode state on connection: ${isRunning}`)
+      bridge.sendGalleryModeActive(isRunning)
+
+      // Refresh app status to update compatibility (camera app will show as compatible if glasses have camera)
+      console.log("📸 Refreshing app status after glasses connect to update compatibility")
+      refreshAppStatus()
+
+      // Auto-start camera app when glasses with camera capability connect
+      if (hasCamera(glassesModelName)) {
+        const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
+
+        if (cameraApp && !cameraApp.is_running) {
+          console.log(`📸 Glasses with camera connected (${glassesModelName}) - auto-starting camera app`)
+          optimisticallyStartApp("com.mentra.camera", "offline")
+        } else {
+          console.log("📸 Camera app already running or not found")
+        }
+      }
+    } else {
+      // Glasses disconnected - auto-close camera app and refresh to update compatibility
+      const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
+
+      if (cameraApp && cameraApp.is_running) {
+        console.log("📸 Glasses disconnected - auto-stopping camera app")
+        optimisticallyStopApp("com.mentra.camera")
+      }
+
+      // Refresh app status to re-evaluate compatibility (camera app will show as incompatible or hidden)
+      console.log("📸 Refreshing app status after glasses disconnect to update compatibility")
+      refreshAppStatus()
+    }
+  }, [status.glasses_info?.model_name]) // Triggers when glasses connect/disconnect
 
   return (
     <AppStatusContext.Provider

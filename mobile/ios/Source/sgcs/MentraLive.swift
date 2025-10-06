@@ -1556,6 +1556,18 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
+    func sendGalleryModeActive(_ active: Bool) {
+        Bridge.log("LiveManager: 📸 Sending gallery mode active to glasses: \(active)")
+
+        let json: [String: Any] = [
+            "type": "save_in_gallery_mode",
+            "active": active,
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+
+        sendJson(json, wakeUp: true)
+    }
+
     // MARK: - Message Handlers
 
     private func handleGlassesReady() {

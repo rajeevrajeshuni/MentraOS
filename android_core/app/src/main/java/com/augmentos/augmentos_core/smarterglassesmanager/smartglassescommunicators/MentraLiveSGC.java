@@ -4050,6 +4050,33 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     }
 
     /**
+     * Send gallery mode active state to the smart glasses
+     * Controls whether button presses should trigger local photo/video capture
+     *
+     * @param active true if gallery/camera app is active, false otherwise
+     */
+    @Override
+    public void sendGalleryModeActive(boolean active) {
+        Log.d(TAG, "📸 Sending gallery mode active to glasses: " + active);
+
+        if (!isConnected) {
+            Log.w(TAG, "Cannot send gallery mode - not connected");
+            return;
+        }
+
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "save_in_gallery_mode");
+            json.put("active", active);
+            json.put("timestamp", System.currentTimeMillis());
+            sendJson(json);
+            Log.d(TAG, "✅ Gallery mode active message sent: " + json.toString());
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating gallery mode message", e);
+        }
+    }
+
+    /**
      * Start buffer recording on glasses
      */
     @Override

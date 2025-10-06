@@ -1,10 +1,7 @@
-import React from "react"
 import {View, TouchableOpacity, ViewStyle, TextStyle, Animated, Pressable} from "react-native"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {colors, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import AppIcon from "./AppIcon"
-import ChevronRight from "assets/icons/component/ChevronRight"
-import SunIcon from "assets/icons/component/SunIcon"
 import {TreeIcon} from "assets/icons/component/TreeIcon"
 import {translate} from "@/i18n"
 import {Switch, Text} from "@/components/ignite"
@@ -28,7 +25,7 @@ interface AppListItemProps {
   isActive: boolean
   onTogglePress: () => void
   onSettingsPress: () => void
-  refProp?: React.Ref<any>
+  refProp?: any
   opacity?: Animated.AnimatedValue
   height?: Animated.AnimatedValue
   isDisabled?: boolean
@@ -89,7 +86,12 @@ export const AppListItem = ({
               <Text text={"Offline"} style={themed($offlineRowText)} />
             </View>
           )}
-          <Tag isActive={isActive} isForeground={app.type == "standard"} isIncompatible={isIncompatible} />
+          <Tag
+            isActive={isActive}
+            isForeground={app.type == "standard"}
+            isOfflineApp={app.type === "offline"}
+            isIncompatible={isIncompatible}
+          />
         </View>
       </TouchableOpacity>
 
@@ -161,7 +163,7 @@ const $appName: ThemedStyle<TextStyle> = () => ({
   overflow: "hidden",
 })
 
-const $offlineRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $offlineRow: ThemedStyle<ViewStyle> = () => ({
   marginTop: 2,
   flexDirection: "row",
   alignItems: "center",
@@ -177,18 +179,15 @@ const $toggleParent: ThemedStyle<ViewStyle> = () => ({
   gap: 12,
 })
 
-const $chevronHitbox: ThemedStyle<ViewStyle> = () => ({
-  padding: 8,
-  margin: -8,
-})
-
 const Tag = ({
   isActive,
   isForeground = false,
+  isOfflineApp = false,
   isIncompatible = false,
 }: {
   isActive: boolean
   isForeground?: boolean
+  isOfflineApp?: boolean
   isIncompatible?: boolean
 }) => {
   const {themed, theme} = useAppTheme()
@@ -198,15 +197,16 @@ const Tag = ({
     return null
   }
 
-  if (!isForeground) {
+  if (!isForeground && !isOfflineApp) {
     return null
   }
 
   return (
     <View style={themed(isActive ? $tagActive : $tag)}>
-      <TreeIcon size={16} color={mColor} />
+      {isForeground && <TreeIcon size={16} color={mColor} />}
+      {isOfflineApp && <MaterialCommunityIcons name="home" size={16} color={mColor} />}
       <Text
-        text={isForeground ? translate("home:foreground") : ""}
+        text={isForeground ? translate("home:foreground") : isOfflineApp ? "Offline" : ""}
         style={[themed($disconnect), {color: mColor}]}
         numberOfLines={1}
       />
@@ -231,7 +231,7 @@ const $tagActive: ThemedStyle<ViewStyle> = ({colors}) => {
     justifyContent: "flex-start",
     gap: 4,
     minHeight: 28,
-    backgroundColor: colors.tagBackground,
+    backgroundColor: colors.background,
     alignSelf: "flex-start",
   }
 }

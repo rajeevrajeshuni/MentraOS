@@ -323,6 +323,9 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new com.augmentos.asg_client.service.core.handlers.TransferCompleteCommandHandler(serviceManager));
             Log.d(TAG, "✅ Registered TransferCompleteCommandHandler");
 
+            commandHandlerRegistry.registerHandler(new com.augmentos.asg_client.service.core.handlers.GalleryModeCommandHandler(serviceManager));
+            Log.d(TAG, "✅ Registered GalleryModeCommandHandler");
+
             commandHandlerRegistry.registerHandler(new com.augmentos.asg_client.service.core.handlers.ServiceHeartbeatCommandHandler(serviceManager));
             Log.d(TAG, "✅ Registered ServiceHeartbeatCommandHandler");
 
