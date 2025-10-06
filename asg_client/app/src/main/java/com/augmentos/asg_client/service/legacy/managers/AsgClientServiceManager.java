@@ -481,4 +481,18 @@ public class AsgClientServiceManager {
             Log.d(TAG, "⏭️ Web server enabled state unchanged - no action needed");
         }
     }
+
+    /**
+     * Handle service heartbeat received from MentraLiveSGC
+     */
+    public void onServiceHeartbeatReceived() {
+        Log.d(TAG, "💓 Service heartbeat received from MentraLiveSGC");
+        
+        // Notify AsgClientService about the heartbeat
+        if (service != null) {
+            service.onServiceHeartbeatReceived();
+        } else {
+            Log.w(TAG, "⚠️ AsgClientService reference is null - cannot notify about heartbeat");
+        }
+    }
 } 

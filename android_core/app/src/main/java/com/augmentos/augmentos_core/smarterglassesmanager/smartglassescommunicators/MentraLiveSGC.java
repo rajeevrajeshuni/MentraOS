@@ -2327,17 +2327,24 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         }
 
         try {
-            // Send ping message (no ACK needed for heartbeats)
+            // Send ping message to glasses hardware (no ACK needed for heartbeats)
             JSONObject pingMsg = new JSONObject();
             pingMsg.put("type", "ping");
             sendJsonWithoutAck(pingMsg);
+
+            // Send heartbeat to AsgClientService for connection monitoring
+            JSONObject serviceHeartbeat = new JSONObject();
+            serviceHeartbeat.put("type", "service_heartbeat");
+            serviceHeartbeat.put("timestamp", System.currentTimeMillis());
+            serviceHeartbeat.put("heartbeat_counter", heartbeatCounter);
+            sendJson(serviceHeartbeat, false); // Use sendJson for ACK tracking
 
             // Send custom audio TX command
             // sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
 
             // Increment heartbeat counter
             heartbeatCounter++;
-            Log.d(TAG, "💓 Heartbeat #" + heartbeatCounter + " sent");
+            Log.d(TAG, "💓 Heartbeat #" + heartbeatCounter + " sent (BLE ping + service heartbeat)");
 
             // Request battery status every N heartbeats
             if (heartbeatCounter % BATTERY_REQUEST_EVERY_N_HEARTBEATS == 0) {
