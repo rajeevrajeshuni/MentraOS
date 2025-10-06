@@ -12,6 +12,7 @@ import {AppletInterface} from "@/types/AppletTypes"
 import {getOfflineApps, isOfflineAppPackage} from "@/types/OfflineApps"
 import bridge from "@/bridge/MantleBridge"
 import {hasCamera} from "@/config/glassesFeatures"
+import {shouldBlockCameraAppStop} from "@/utils/cameraAppProtection"
 
 interface AppStatusContextType {
   appStatus: AppletInterface[]
@@ -288,16 +289,31 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
   const stopAllApps = async () => {
     try {
       const runningApps = appStatus.filter(app => app.is_running)
+
       for (const app of runningApps) {
         // Skip offline apps - they don't need server communication
         if (isOfflineAppPackage(app.packageName)) {
+          // Special protection for Camera app when Mentra Live is connected
+          if (shouldBlockCameraAppStop(app.packageName, status)) {
+            console.log("🛡️ Camera app protection active in stopAllApps - skipping during Mentra Live connection")
+            continue
+          }
           console.log("Skipping offline app in stopAllApps:", app.packageName)
           continue
         }
         await restComms.stopApp(app.packageName)
       }
-      // Update local state to reflect all apps are stopped
-      setAppStatus(currentStatus => currentStatus.map(app => (app.is_running ? {...app, is_running: false} : app)))
+
+      // Update local state to reflect all apps are stopped, but preserve Camera app if protected
+      setAppStatus(currentStatus =>
+        currentStatus.map(app => {
+          // Keep Camera app running if Mentra Live is connected
+          if (shouldBlockCameraAppStop(app.packageName, status)) {
+            return app // Keep current state
+          }
+          return app.is_running ? {...app, is_running: false} : app
+        }),
+      )
     } catch (error) {
       console.error("Error stopping all apps:", error)
       throw error
@@ -309,6 +325,13 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     // Check if this is an offline app first
     if (isOfflineAppPackage(packageName)) {
       console.log("Stopping offline app:", packageName)
+
+      // Special protection for Camera app when Mentra Live is connected
+      if (shouldBlockCameraAppStop(packageName, status)) {
+        console.log("🛡️ Camera app protection active - preventing stop during Mentra Live connection")
+        return // Block the stop operation
+      }
+
       setAppStatus(currentStatus =>
         currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: false, loading: false} : app)),
       )

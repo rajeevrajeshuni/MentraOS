@@ -14,6 +14,8 @@ import AppsHeader from "./AppsHeader"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {attemptAppStop} from "@/utils/cameraAppProtection"
 
 export default function AppsActiveList({
   isSearchPage = false,
@@ -24,9 +26,10 @@ export default function AppsActiveList({
 }) {
   const {appStatus, refreshAppStatus, optimisticallyStopApp, clearPendingOperation} = useAppStatus()
   const [isLoading, setIsLoading] = useState(false)
-  const {themed} = useAppTheme()
+  const {themed, theme} = useAppTheme()
   const [hasEverActivatedApp, setHasEverActivatedApp] = useState(true)
   const {push} = useNavigationHistory()
+  const {status} = useCoreStatus()
 
   const runningApps = useMemo(() => {
     let apps = appStatus.filter(app => app.is_running)
@@ -187,6 +190,11 @@ export default function AppsActiveList({
                 app={app}
                 isActive={true}
                 onTogglePress={() => {
+                  // Check for Camera app protection
+                  if (attemptAppStop(app.packageName, status, theme)) {
+                    return // Block the animation and stop operation
+                  }
+
                   if (itemOpacity) {
                     Animated.timing(itemOpacity, {
                       toValue: 0,

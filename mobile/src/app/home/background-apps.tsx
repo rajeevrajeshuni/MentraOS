@@ -19,11 +19,14 @@ import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {attemptAppStop, shouldBlockCameraAppStop} from "@/utils/cameraAppProtection"
 
 export default function BackgroundAppsScreen() {
   const {themed, theme} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
   const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
+  const {status} = useCoreStatus()
   const [defaultWearable, _setDefaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
 
   const {active, inactive} = useBackgroundApps()
@@ -34,6 +37,11 @@ export default function BackgroundAppsScreen() {
   )
 
   const toggleApp = async (app: AppletInterface) => {
+    // Check for Camera app protection
+    if (attemptAppStop(app.packageName, status, theme)) {
+      return // Block the toggle operation
+    }
+
     if (app.is_running) {
       await stopApp(app.packageName)
     } else {
@@ -174,6 +182,14 @@ export default function BackgroundAppsScreen() {
                   <Text text="Offline" style={themed($offlineText)} />
                 </View>
               )}
+              {app.packageName === "com.mentra.camera" &&
+                app.is_running &&
+                shouldBlockCameraAppStop(app.packageName, status) && (
+                  <View style={themed($offlineRow)}>
+                    <MaterialCommunityIcons name="shield-check" size={14} color={theme.colors.tint} />
+                    <Text text="Required" style={[themed($offlineText), {color: theme.colors.tint}]} />
+                  </View>
+                )}
             </View>
           </View>
           <View style={themed($rightControls)}>
@@ -197,8 +213,7 @@ export default function BackgroundAppsScreen() {
               <Switch
                 value={app.is_running}
                 onValueChange={() => toggleApp(app)}
-                disabled={false}
-                pointerEvents="none"
+                disabled={shouldBlockCameraAppStop(app.packageName, status)}
               />
             </TouchableOpacity>
           </View>
@@ -242,7 +257,7 @@ export default function BackgroundAppsScreen() {
                     <Text style={themed($tipText)} tx="home:activateAnApp" />
                     <Text style={themed($tipSubtext)} tx="home:tapAnAppSwitch" />
                   </View>
-                  <Switch value={false} onValueChange={() => {}} disabled={false} pointerEvents="none" />
+                  <Switch value={false} onValueChange={() => {}} disabled={false} />
                 </View>
                 <Spacer height={theme.spacing.lg} />
               </>
