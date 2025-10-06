@@ -893,7 +893,7 @@ export class AppManager {
           ws.close(1008, "Invalid API key");
         } catch (sendError) {
           this.logger.error(
-            { sendError },
+            sendError,
             `Error sending auth error to App ${packageName}:`,
           );
         }
@@ -933,7 +933,7 @@ export class AppManager {
           );
         } catch (sendError) {
           this.logger.error(
-            { sendError },
+            sendError,
             `Error sending app not started error to App ${packageName}:`,
           );
         }
@@ -1097,10 +1097,7 @@ export class AppManager {
 
         ws.close(1011, "Internal server error");
       } catch (sendError) {
-        this.logger.error(
-          { sendError },
-          `Error sending internal error to App:`,
-        );
+        this.logger.error(sendError, `Error sending internal error to App:`);
       }
     }
   }

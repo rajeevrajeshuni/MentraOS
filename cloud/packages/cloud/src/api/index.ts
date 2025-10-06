@@ -6,7 +6,6 @@ import feedbackApi from "./client/feedback.api";
 import minVersionApi from "./client/min-version.api";
 import publicPermissionsApi from "./public/permission";
 
-
 // Legacy route modules (to be migrated gradually)
 import appRoutes from "../routes/apps.routes";
 import authRoutes from "../routes/auth.routes";
@@ -37,12 +36,12 @@ import streamsRoutes from "../routes/streams.routes";
  */
 export function registerApi(app: Application) {
   // New APIs (mounted under audience-specific prefixes)
-  app.use('/api/client/user/settings', userSettingsApi);
-  app.use('/api/client/feedback', feedbackApi);
-  app.use('/api/client/min-version', minVersionApi);
+  app.use("/api/client/user/settings", userSettingsApi);
+  app.use("/api/client/feedback", feedbackApi);
+  app.use("/api/client/min-version", minVersionApi);
 
   // Public APIs (no auth required)
-  app.use('/api/public/permissions', publicPermissionsApi);
+  app.use("/api/public/permissions", publicPermissionsApi);
 
   // Legacy mounts (to be migrated)
   app.use("/api/apps", appRoutes);
