@@ -66,11 +66,11 @@ jobs:
       - name: Build iOS app for Simulator
         working-directory: ./mobile/ios
         run: |
-          xcodebuild -workspace AOS.xcworkspace \
+          xcodebuild build-for-testing \
+                     -workspace AOS.xcworkspace \
                      -scheme AOS \
                      -configuration Debug \
                      -sdk iphonesimulator \
-                     -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.4' \
                      -derivedDataPath build
 
       - name: Build iOS app for Device
