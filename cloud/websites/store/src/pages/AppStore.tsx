@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   useNavigate,
   useSearchParams,
-  Link,
-  useLocation,
 } from "react-router-dom";
-import { Search, X, Building, Lock } from "lucide-react";
+import { X, Building } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { usePlatform } from "../hooks/usePlatform";
@@ -17,7 +15,6 @@ import { AppI } from "../types";
 import Header from "../components/Header";
 import AppCard from "../components/AppCard";
 import { toast } from "sonner";
-import { Button } from "../components/ui/button";
 import { formatCompatibilityError } from "../utils/errorHandling";
 
 // Extend window interface for React Native WebView

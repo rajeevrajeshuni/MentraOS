@@ -6,6 +6,7 @@ import feedbackApi from "./client/feedback.api";
 import minVersionApi from "./client/min-version.api";
 import simpleStorageApi from "./sdk/simple-storage.api";
 import sdkVersionApi from "./sdk/sdk-version.api";
+import publicPermissionsApi from "./public/permission";
 
 // Console APIs
 import consoleAccountApi from "./console/console.account.api";
@@ -51,6 +52,8 @@ export function registerApi(app: Application) {
   app.use("/api/sdk/version", sdkVersionApi);
   app.use("/api/sdk/simple-storage", simpleStorageApi);
 
+  // Public APIs (no auth required)
+  app.use("/api/public/permissions", publicPermissionsApi);
   // Console mounts
   app.use("/api/console/account", consoleAccountApi);
   app.use("/api/console/orgs", orgsApi);
