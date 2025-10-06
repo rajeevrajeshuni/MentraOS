@@ -369,12 +369,16 @@ class Bridge: RCTEventEmitter {
             case send_wifi_credentials
             case set_hotspot_state
             case query_gallery_status
+            case send_gallery_mode_active
             case photo_request
             case start_buffer_recording
             case stop_buffer_recording
             case save_buffer_video
             case start_video_recording
             case stop_video_recording
+            case start_rtmp_stream
+            case stop_rtmp_stream
+            case keep_rtmp_stream_alive
             case set_auth_secret_key
             case set_stt_model_details
             case get_stt_model_path
@@ -477,6 +481,13 @@ class Bridge: RCTEventEmitter {
                 case .query_gallery_status:
                     Bridge.log("CommandBridge: Querying gallery status")
                     m.queryGalleryStatus()
+                case .send_gallery_mode_active:
+                    guard let params = params, let active = params["active"] as? Bool else {
+                        Bridge.log("CommandBridge: send_gallery_mode_active invalid params")
+                        break
+                    }
+                    Bridge.log("CommandBridge: Sending gallery mode active: \(active)")
+                    m.sendGalleryModeActive(active)
                 case .photo_request:
                     guard let params = params,
                           let requestId = params["requestId"] as? String,
@@ -522,6 +533,23 @@ class Bridge: RCTEventEmitter {
                     }
                     Bridge.log("CommandBridge: Stopping video recording: requestId=\(requestId)")
                     m.stopVideoRecording(requestId: requestId)
+                case .start_rtmp_stream:
+                    guard let params = params else {
+                        Bridge.log("CommandBridge: start_rtmp_stream invalid params")
+                        break
+                    }
+                    Bridge.log("CommandBridge: Starting RTMP stream")
+                    m.onRtmpStreamStartRequest(params)
+                case .stop_rtmp_stream:
+                    Bridge.log("CommandBridge: Stopping RTMP stream")
+                    m.onRtmpStreamStop()
+                case .keep_rtmp_stream_alive:
+                    guard let params = params else {
+                        Bridge.log("CommandBridge: keep_rtmp_stream_alive invalid params")
+                        break
+                    }
+                    Bridge.log("CommandBridge: RTMP stream keep alive")
+                    m.onRtmpStreamKeepAlive(params)
                 case .unknown:
                     Bridge.log("CommandBridge: Unknown command type: \(commandString)")
                     m.handle_request_status()

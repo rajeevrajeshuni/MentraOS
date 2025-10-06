@@ -547,7 +547,7 @@ struct ViewState {
             // )
 
             // if a g1 is connected, set the mic enabled:
-            if sgc?.type == "g1", sgc!.ready {
+            if sgc?.hasMic ?? false, sgc!.ready {
                 await sgc!.setMicEnabled(useGlassesMic)
             }
 
@@ -1161,6 +1161,11 @@ struct ViewState {
     func queryGalleryStatus() {
         Bridge.log("Mentra: 📸 Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
+    }
+
+    func sendGalleryModeActive(_ active: Bool) {
+        Bridge.log("Mentra: 📸 Sending gallery mode active to glasses: \(active)")
+        sgc?.sendGalleryModeActive(active)
     }
 
     func restartTranscriber() {

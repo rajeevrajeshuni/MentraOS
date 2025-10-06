@@ -150,34 +150,47 @@ public class K900CommandHandler {
     }
 
     /**
-     * Handle button press based on configured mode
+     * Handle button press with universal forwarding and gallery mode check
+     * Button presses are ALWAYS forwarded to phone/apps
+     * Local capture only happens when camera/gallery app is active
      */
     private void handleConfigurableButtonPress(boolean isLongPress) {
         if (serviceManager != null && serviceManager.getAsgSettings() != null) {
-            AsgSettings.ButtonPressMode mode = serviceManager.getAsgSettings().getButtonPressMode();
             String pressType = isLongPress ? "long" : "short";
-            Log.d(TAG, "Handling " + pressType + " button press with mode: " + mode.getValue());
+            Log.d(TAG, "Handling " + pressType + " button press");
 
-            switch (mode) {
-                case PHOTO:
-                    handlePhotoMode(isLongPress);
-                    break;
+            // ALWAYS send button press to phone/apps
+            Log.d(TAG, "📱 Forwarding button press to phone/apps (universal forwarding)");
+            sendButtonPressToPhone(isLongPress);
 
-                case APPS:
-                    handleAppsMode(isLongPress);
-                    break;
-
-                case BOTH:
-                    handleBothMode(isLongPress);
-                    break;
-            }
+            // Check if camera/gallery app is active for local capture
+            handlePhotoCapture(isLongPress);
         }
     }
 
     /**
-     * Handle PHOTO mode button press
+     * Handle photo/video capture based on gallery mode state
+     * Only captures if camera/gallery app is currently active OR if glasses are disconnected
      */
-    private void handlePhotoMode(boolean isLongPress) {
+    private void handlePhotoCapture(boolean isLongPress) {
+        // Check if gallery/camera app is active before capturing
+        boolean isSaveInGalleryMode = serviceManager
+            .getAsgSettings()
+            .isSaveInGalleryMode();
+        
+        // Check if glasses are disconnected from phone
+        boolean isDisconnected = !serviceManager.isConnected();
+        
+        if (!isSaveInGalleryMode && !isDisconnected) {
+            Log.d(TAG, "📸 Camera app not active and glasses connected - skipping local capture (button press already forwarded to apps)");
+            return;
+        }
+        
+        if (isDisconnected) {
+            Log.d(TAG, "📸 Glasses disconnected from phone - proceeding with local capture regardless of gallery mode");
+        } else {
+            Log.d(TAG, "📸 Camera app active - proceeding with local capture");
+        }
 
         MediaCaptureService captureService = serviceManager.getMediaCaptureService();
         if (captureService == null) {
@@ -189,65 +202,21 @@ public class K900CommandHandler {
         boolean ledEnabled = serviceManager.getAsgSettings().getButtonCameraLedEnabled();
         
         if (isLongPress) {
-            Log.d(TAG, "📹 Starting video recording (PHOTO mode, long press) with LED: " + ledEnabled);
+            Log.d(TAG, "📹 Starting video recording (long press) with LED: " + ledEnabled);
             // Get saved video settings for button press
             VideoSettings videoSettings = serviceManager.getAsgSettings().getButtonVideoSettings();
             captureService.startVideoRecording(videoSettings, ledEnabled);
         } else {
-            // Short press in PHOTO mode
+            // Short press behavior
             // If video is recording, stop it. Otherwise take a photo.
             if (captureService.isRecordingVideo()) {
-                Log.d(TAG, "⏹️ Stopping video recording (PHOTO mode, short press during recording)");
+                Log.d(TAG, "⏹️ Stopping video recording (short press during recording)");
                 captureService.stopVideoRecording();
             } else {
-                Log.d(TAG, "📸 Taking photo locally (PHOTO mode, short press) with LED: " + ledEnabled);
+                Log.d(TAG, "📸 Taking photo locally (short press) with LED: " + ledEnabled);
                 // Get saved photo size for button press
                 String photoSize = serviceManager.getAsgSettings().getButtonPhotoSize();
                 captureService.takePhotoLocally(photoSize, ledEnabled);
-            }
-        }
-    }
-
-    /**
-     * Handle APPS mode button press
-     */
-    private void handleAppsMode(boolean isLongPress) {
-        Log.d(TAG, "📱 Sending button press to apps (APPS mode)");
-        sendButtonPressToPhone(isLongPress);
-    }
-
-    /**
-     * Handle BOTH mode button press
-     */
-    private void handleBothMode(boolean isLongPress) {
-        Log.d(TAG, "🔄 Sending button press to apps AND taking photo/video (BOTH mode)");
-        sendButtonPressToPhone(isLongPress);
-
-        // Get LED setting
-        boolean ledEnabled = serviceManager.getAsgSettings().getButtonCameraLedEnabled();
-        
-        if (isLongPress) {
-            MediaCaptureService captureService = serviceManager.getMediaCaptureService();
-            if (captureService != null) {
-                Log.d(TAG, "📹 Starting video recording (BOTH mode, long press) with LED: " + ledEnabled);
-                // Get saved video settings for button press
-                VideoSettings videoSettings = serviceManager.getAsgSettings().getButtonVideoSettings();
-                captureService.startVideoRecording(videoSettings, ledEnabled);
-            }
-        } else {
-            MediaCaptureService captureService = serviceManager.getMediaCaptureService();
-            if (captureService != null) {
-                // Short press in BOTH mode
-                // If video is recording, stop it. Otherwise take a photo.
-                if (captureService.isRecordingVideo()) {
-                    Log.d(TAG, "⏹️ Stopping video recording (BOTH mode, short press during recording)");
-                    captureService.stopVideoRecording();
-                } else {
-                    Log.d(TAG, "📸 Taking photo locally (BOTH mode, short press) with LED: " + ledEnabled);
-                    // Get saved photo size for button press
-                    String photoSize = serviceManager.getAsgSettings().getButtonPhotoSize();
-                    captureService.takePhotoLocally(photoSize, ledEnabled);
-                }
             }
         }
     }

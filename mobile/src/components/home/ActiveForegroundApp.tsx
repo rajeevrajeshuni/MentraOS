@@ -1,19 +1,24 @@
-import {View, TouchableOpacity, Text, ViewStyle, ImageStyle, TextStyle} from "react-native"
+import {View, TouchableOpacity, ViewStyle, ImageStyle, TextStyle} from "react-native"
 
 import AppIcon from "@/components/misc/AppIcon"
+import {Text} from "@/components/ignite"
 import {useActiveForegroundApp, useAppStatus} from "@/contexts/AppletStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/utils/useAppTheme"
 import ChevronRight from "assets/icons/component/ChevronRight"
+import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 import restComms from "@/managers/RestComms"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {attemptAppStop} from "@/utils/cameraAppProtection"
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const activeForegroundApp = useActiveForegroundApp()
   const {optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
+  const {status} = useCoreStatus()
 
   const handlePress = () => {
     if (activeForegroundApp) {
@@ -35,6 +40,11 @@ export const ActiveForegroundApp: React.FC = () => {
 
   const handleLongPress = () => {
     if (activeForegroundApp) {
+      // Check for Camera app protection
+      if (attemptAppStop(activeForegroundApp.packageName, status, theme)) {
+        return // Block the stop operation
+      }
+
       showAlert("Stop App", `Do you want to stop ${activeForegroundApp.name}?`, [
         {text: "Cancel", style: "cancel"},
         {
@@ -53,6 +63,28 @@ export const ActiveForegroundApp: React.FC = () => {
           },
         },
       ])
+    }
+  }
+
+  const handleStopApp = async (event: any) => {
+    // Prevent the parent TouchableOpacity from triggering
+    event.stopPropagation()
+
+    if (activeForegroundApp) {
+      // Check for Camera app protection
+      if (attemptAppStop(activeForegroundApp.packageName, status, theme)) {
+        return // Block the stop operation
+      }
+
+      optimisticallyStopApp(activeForegroundApp.packageName)
+
+      try {
+        await restComms.stopApp(activeForegroundApp.packageName)
+        clearPendingOperation(activeForegroundApp.packageName)
+      } catch (error) {
+        refreshAppStatus()
+        console.error("Stop app error:", error)
+      }
     }
   }
 
@@ -85,6 +117,9 @@ export const ActiveForegroundApp: React.FC = () => {
             </View>
           </View>
         </View>
+        <TouchableOpacity onPress={handleStopApp} style={themed($closeButton)} activeOpacity={0.7}>
+          <CloseXIcon size={24} color={theme.colors.textDim} />
+        </TouchableOpacity>
         <ChevronRight color={theme.colors.text} />
       </View>
     </TouchableOpacity>
@@ -136,8 +171,14 @@ const $activeTag: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
 
 const $tagText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 11,
-  color: colors.foregroundTagText,
+  color: colors.primary,
   fontWeight: "500",
+})
+
+const $closeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  padding: spacing.xs,
+  justifyContent: "center",
+  alignItems: "center",
 })
 
 const $placeholderContent: ThemedStyle<ViewStyle> = ({spacing}) => ({

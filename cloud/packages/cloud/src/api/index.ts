@@ -8,6 +8,12 @@ import simpleStorageApi from "./sdk/simple-storage.api";
 import sdkVersionApi from "./sdk/sdk-version.api";
 import publicPermissionsApi from "./public/permission";
 
+// Console APIs
+import consoleAccountApi from "./console/console.account.api";
+import orgsApi from "./console/orgs.api";
+import consoleAppsApi from "./console/console.apps.api";
+import livekitApi from "./client/livekit.api";
+
 // Legacy route modules (to be migrated gradually)
 import appRoutes from "../routes/apps.routes";
 import authRoutes from "../routes/auth.routes";
@@ -15,7 +21,6 @@ import transcriptRoutes from "../routes/transcripts.routes";
 import appSettingsRoutes from "../routes/app-settings.routes";
 import errorReportRoutes from "../routes/error-report.routes";
 import devRoutes from "../routes/developer.routes";
-import serverRoutes from "../routes/server.routes";
 import adminRoutes from "../routes/admin.routes";
 import photoRoutes from "../routes/photos.routes";
 import galleryRoutes from "../routes/gallery.routes";
@@ -41,6 +46,7 @@ export function registerApi(app: Application) {
   app.use("/api/client/user/settings", userSettingsApi);
   app.use("/api/client/feedback", feedbackApi);
   app.use("/api/client/min-version", minVersionApi);
+  app.use("/api/client/livekit", livekitApi);
 
   app.use("/api/sdk", sdkVersionApi);
   app.use("/api/sdk/version", sdkVersionApi);
@@ -48,6 +54,10 @@ export function registerApi(app: Application) {
 
   // Public APIs (no auth required)
   app.use("/api/public/permissions", publicPermissionsApi);
+  // Console mounts
+  app.use("/api/console/account", consoleAccountApi);
+  app.use("/api/console/orgs", orgsApi);
+  app.use("/api/console/apps", consoleAppsApi);
 
   // Legacy mounts (to be migrated)
   app.use("/api/apps", appRoutes);
@@ -60,7 +70,6 @@ export function registerApi(app: Application) {
   app.use("/api/admin", adminRoutes);
   app.use("/api/orgs", organizationRoutes);
 
-  app.use("/api/server", serverRoutes);
   app.use("/api/photos", photoRoutes);
   app.use("/api/gallery", galleryRoutes);
   app.use("/api/tools", toolsRoutes);
@@ -68,7 +77,6 @@ export function registerApi(app: Application) {
   app.use("/api/hardware", hardwareRoutes);
 
   // HTTP routes for augmentOS settings are now replaced by WebSocket implementation
-  // app.use('/api/augmentos-settings', augmentosSettingsRoutes);
   app.use(errorReportRoutes);
   app.use(transcriptRoutes);
   app.use(audioRoutes);

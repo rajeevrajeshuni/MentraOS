@@ -33,7 +33,7 @@ public class SettingsCommandHandler implements ICommandHandler {
 
     @Override
     public Set<String> getSupportedCommandTypes() {
-        return Set.of("set_photo_mode", "button_mode_setting", "button_video_recording_setting", 
+        return Set.of("set_photo_mode", "button_video_recording_setting", 
                       "button_photo_setting", "button_camera_led");
     }
 
@@ -43,8 +43,6 @@ public class SettingsCommandHandler implements ICommandHandler {
             switch (commandType) {
                 case "set_photo_mode":
                     return handleSetPhotoMode(data);
-                case "button_mode_setting":
-                    return handleButtonModeSetting(data);
                 case "button_video_recording_setting":
                     return handleButtonVideoRecordingSetting(data);
                 case "button_photo_setting":
@@ -76,27 +74,6 @@ public class SettingsCommandHandler implements ICommandHandler {
         }
     }
 
-    /**
-     * Handle button mode setting command
-     */
-    public boolean handleButtonModeSetting(JSONObject data) {
-        try {
-            String mode = data.optString("mode", "photo");
-            Log.d(TAG, "📱 Received button mode setting: " + mode);
-            AsgSettings settings = serviceManager.getAsgSettings();
-            if (settings != null) {
-                settings.setButtonPressMode(mode);
-                return true;
-            } else {
-                Log.e(TAG, "Settings not available");
-                return false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling button mode setting", e);
-            return false;
-        }
-    }
-    
     /**
      * Handle button video recording setting command
      */

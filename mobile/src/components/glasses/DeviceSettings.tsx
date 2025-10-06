@@ -79,7 +79,6 @@ export default function DeviceSettings() {
   const {status} = useCoreStatus()
   const isGlassesConnected = Boolean(status.glasses_info?.model_name)
   const [defaultWearable, _setDefaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [buttonMode, setButtonMode] = useSetting(SETTINGS_KEYS.button_mode)
   const [preferredMic, setPreferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
@@ -166,12 +165,6 @@ export default function DeviceSettings() {
     }, [fadeAnim, scaleAnim, slideAnim, checkLocalPhotos]),
   )
 
-  useEffect(() => {
-    if (status.glasses_settings?.button_mode) {
-      setButtonMode(status.glasses_settings.button_mode)
-    }
-  }, [status.glasses_settings?.button_mode])
-
   const setMic = async (val: string) => {
     if (val === "phone") {
       // We're potentially about to enable the mic, so request permission
@@ -195,12 +188,6 @@ export default function DeviceSettings() {
     setPreferredMic(val)
     await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, val)
     await bridge.sendSetPreferredMic(val) // TODO: config: remove
-  }
-
-  const setButtonModeWithSave = async (mode: string) => {
-    setButtonMode(mode)
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.button_mode, mode)
-    await bridge.sendSetButtonMode(mode) // TODO: config: remove
   }
 
   const confirmForgetGlasses = () => {
@@ -372,68 +359,6 @@ export default function DeviceSettings() {
       )}
       {/* Mic selector has been moved to Advanced Settings section below */}
 
-      {/* Only show button mode selector if glasses support configurable button */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.configurableButton && (
-        <View style={themed($settingsGroup)}>
-          <Text style={[themed($settingLabel), {marginBottom: theme.spacing.sm}]}>
-            {translate("deviceSettings:cameraButtonAction")}
-          </Text>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              paddingBottom: theme.spacing.xs,
-              paddingTop: theme.spacing.xs,
-            }}
-            onPress={() => setButtonModeWithSave("photo")}>
-            <Text style={{color: theme.colors.text}}>{translate("deviceSettings:takeGalleryPhoto")}</Text>
-            <MaterialCommunityIcons
-              name="check"
-              size={24}
-              color={buttonMode === "photo" ? theme.colors.icon : "transparent"}
-            />
-          </TouchableOpacity>
-
-          {/* divider */}
-          <View style={{height: 1, backgroundColor: theme.colors.separator, marginVertical: 4}} />
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              paddingTop: theme.spacing.xs,
-              paddingBottom: theme.spacing.xs,
-            }}
-            onPress={() => setButtonModeWithSave("apps")}>
-            <Text style={{color: theme.colors.text}}>{translate("deviceSettings:useInApps")}</Text>
-            <MaterialCommunityIcons
-              name="check"
-              size={24}
-              color={buttonMode === "apps" ? theme.colors.icon : "transparent"}
-            />
-          </TouchableOpacity>
-
-          {/* divider */}
-          <View style={{height: 1, backgroundColor: theme.colors.separator, marginVertical: 4}} />
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              paddingTop: theme.spacing.xs,
-            }}
-            onPress={() => setButtonModeWithSave("both")}>
-            <Text style={{color: theme.colors.text}}>{translate("deviceSettings:both")}</Text>
-            <MaterialCommunityIcons
-              name="check"
-              size={24}
-              color={buttonMode === "both" ? theme.colors.icon : "transparent"}
-            />
-          </TouchableOpacity>
-        </View>
-      )}
-
       {/* Camera Settings button for glasses with configurable button */}
       {defaultWearable && glassesFeatures[defaultWearable]?.configurableButton && (
         <RouteButton
@@ -589,7 +514,7 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
   paddingVertical: 12,
   paddingHorizontal: 16,
   borderRadius: spacing.md,
@@ -621,7 +546,7 @@ const $infoText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $advancedSettingsButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
   paddingVertical: 14,
   paddingHorizontal: 16,
   borderRadius: spacing.md,
