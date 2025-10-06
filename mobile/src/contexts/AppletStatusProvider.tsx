@@ -28,7 +28,7 @@ const AppStatusContext = createContext<AppStatusContextType | undefined>(undefin
 export const AppStatusProvider = ({children}: {children: ReactNode}) => {
   const [appStatus, setAppStatus] = useState<AppletInterface[]>([])
   const {user} = useAuth()
-  const {theme} = useAppTheme()
+  const {theme, themeContext} = useAppTheme()
   const {status} = useCoreStatus()
 
   // Keep track of active operations to prevent race conditions
@@ -91,7 +91,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
       setAppStatus(currentAppStatus => {
         // Add offline apps to the beginning of the list (with compatibility check)
-        const offlineApps = getOfflineApps(status.glasses_info?.model_name, defaultWearable)
+        const offlineApps = getOfflineApps(status.glasses_info?.model_name, defaultWearable, themeContext === "dark")
 
         const appsWithOffline = [...offlineApps, ...mapped]
 
@@ -170,7 +170,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     } catch (err) {
       console.error("AppStatusProvider: Error fetching apps:", err)
     }
-  }, [user])
+  }, [user, themeContext])
 
   // Optimistically update app status when starting an app
   const optimisticallyStartApp = async (packageName: string, appType?: string) => {
