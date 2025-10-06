@@ -70,6 +70,7 @@ jobs:
                      -scheme AOS \
                      -configuration Debug \
                      -sdk iphonesimulator \
+                     -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
                      -derivedDataPath build
 
       - name: Build iOS app for Device
