@@ -110,8 +110,8 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
     // Sort to put Camera app first, then alphabetical
     filtered.sort((a, b) => {
       // Camera app always comes first
-      if (a.packageName === "com.augmentos.camera") return -1
-      if (b.packageName === "com.augmentos.camera") return 1
+      if (a.packageName === "com.mentra.camera") return -1
+      if (b.packageName === "com.mentra.camera") return 1
 
       // Otherwise sort alphabetically
       return a.name.localeCompare(b.name)

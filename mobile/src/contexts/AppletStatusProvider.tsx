@@ -111,7 +111,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
               }
 
               // Special logic for camera app: if it's running, override compatibility to be compatible
-              if (app.packageName === "com.augmentos.camera" && existingApp.is_running) {
+              if (app.packageName === "com.mentra.camera" && existingApp.is_running) {
                 updatedApp.compatibility = {
                   isCompatible: true,
                   missingRequired: [],
@@ -124,7 +124,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
             }
 
             // No existing state - restore from AsyncStorage for camera app
-            if (app.packageName === "com.augmentos.camera") {
+            if (app.packageName === "com.mentra.camera") {
               const restoredApp = {
                 ...app,
                 is_running: savedCameraAppState ?? false,
@@ -182,7 +182,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       )
 
       // Persist camera app state to AsyncStorage
-      if (packageName === "com.augmentos.camera") {
+      if (packageName === "com.mentra.camera") {
         await useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, true)
         console.log("Camera app state persisted to AsyncStorage: true")
       }
@@ -314,7 +314,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       )
 
       // Persist camera app state to AsyncStorage
-      if (packageName === "com.augmentos.camera") {
+      if (packageName === "com.mentra.camera") {
         await useSettingsStore.getState().setSetting(SETTINGS_KEYS.camera_app_running, false)
         console.log("Camera app state persisted to AsyncStorage: false")
       }
@@ -405,7 +405,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Watch camera app state and send gallery mode updates to glasses (Android only)
   useEffect(() => {
-    const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+    const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
 
     if (cameraApp) {
       const isRunning = cameraApp.is_running ?? false
@@ -422,7 +422,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       // Glasses just connected - re-send current camera app state
       console.log(`Glasses connected (${glassesModelName}) - re-syncing camera app state`)
 
-      const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+      const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
       const isRunning = cameraApp?.is_running ?? false
 
       console.log(`Re-sending gallery mode state on connection: ${isRunning}`)
@@ -434,22 +434,22 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
       // Auto-start camera app when glasses with camera capability connect
       if (hasCamera(glassesModelName)) {
-        const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+        const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
 
         if (cameraApp && !cameraApp.is_running) {
           console.log(`📸 Glasses with camera connected (${glassesModelName}) - auto-starting camera app`)
-          optimisticallyStartApp("com.augmentos.camera", "offline")
+          optimisticallyStartApp("com.mentra.camera", "offline")
         } else {
           console.log("📸 Camera app already running or not found")
         }
       }
     } else {
       // Glasses disconnected - auto-close camera app and refresh to update compatibility
-      const cameraApp = appStatus.find(app => app.packageName === "com.augmentos.camera")
+      const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
 
       if (cameraApp && cameraApp.is_running) {
         console.log("📸 Glasses disconnected - auto-stopping camera app")
-        optimisticallyStopApp("com.augmentos.camera")
+        optimisticallyStopApp("com.mentra.camera")
       }
 
       // Refresh app status to re-evaluate compatibility (camera app will show as incompatible or hidden)

@@ -10,7 +10,7 @@ import {hasCamera} from "@/config/glassesFeatures"
 
 export const OFFLINE_APPS: AppletInterface[] = [
   {
-    packageName: "com.augmentos.camera",
+    packageName: "com.mentra.camera",
     name: "Camera",
     type: "offline",
     developerName: "Mentra",
@@ -38,7 +38,7 @@ export const getOfflineApps = (
 ): AppletInterface[] => {
   return OFFLINE_APPS.map(app => {
     // Camera app requires camera-capable glasses to be connected
-    if (app.packageName === "com.augmentos.camera") {
+    if (app.packageName === "com.mentra.camera") {
       // Check camera capability - prioritize connected glasses, fallback to default wearable
       const wearableToCheck = glassesModelName || defaultWearable
 
