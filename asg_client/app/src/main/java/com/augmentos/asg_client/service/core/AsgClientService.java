@@ -357,6 +357,57 @@ public class AsgClientService extends Service implements NetworkStateListener, B
         }
     }
 
+    // ---------------------------------------------
+    // Touch/Swipe Event Commands
+    // ---------------------------------------------
+    
+    /**
+     * Enable or disable touch event reporting
+     * @param enable true to enable touch events, false to disable
+     */
+    public void handleTouchEventControl(boolean enable) {
+        Log.i(TAG, "Touch event control request: " + (enable ? "enable" : "disable"));
+
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("C", "cs_swst");
+            JSONObject bData = new JSONObject();
+            bData.put("type", 26);
+            bData.put("switch", enable);
+            payload.put("B", bData);
+
+            boolean sent = sendK900Command(payload.toString());
+            if (sent) {
+                Log.i(TAG, "Touch event control command sent successfully");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to construct touch event control payload", e);
+        }
+    }
+
+    /**
+     * Enable or disable swipe volume control
+     * @param enable true to enable swipe volume control, false to disable
+     */
+    public void handleSwipeVolumeControl(boolean enable) {
+        Log.i(TAG, "Swipe volume control request: " + (enable ? "enable" : "disable"));
+
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("C", "cs_fbvol");
+            JSONObject bData = new JSONObject();
+            bData.put("switch", enable);
+            payload.put("B", bData);
+
+            boolean sent = sendK900Command(payload.toString());
+            if (sent) {
+                Log.i(TAG, "Swipe volume control command sent successfully");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to construct swipe volume control payload", e);
+        }
+    }
+
     private boolean sendK900Command(String payload) {
         if (serviceContainer == null || serviceContainer.getServiceManager() == null) {
             Log.w(TAG, "ServiceContainer not initialized; cannot send I2S command");

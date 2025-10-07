@@ -67,6 +67,25 @@ public class K900CommandHandler {
                     handleFileTransferAck(bData);
                     break;
 
+                // ---------------------------------------------
+                // BES → MTK Response Handlers (Touch/Swipe Only)
+                // ---------------------------------------------
+                
+                case "sr_swst":
+                    // Switch status report (touch events)
+                    handleSwitchStatusReport(bData);
+                    break;
+
+                case "sr_tpevt":
+                    // Touch event report
+                    handleTouchEventReport(bData);
+                    break;
+
+                case "sr_fbvol":
+                    // Swipe volume status report
+                    handleSwipeVolumeStatusReport(bData);
+                    break;
+
                 default:
                     Log.d(TAG, "📦 Unknown K900 command: " + command);
                     break;
@@ -270,6 +289,152 @@ public class K900CommandHandler {
             } catch (JSONException e) {
                 Log.e(TAG, "Error creating battery status JSON", e);
             }
+        }
+    }
+
+    // ---------------------------------------------
+    // BES → MTK Response Handlers (Touch/Swipe Only)
+    // ---------------------------------------------
+
+    /**
+     * Handle switch status report (touch events)
+     */
+    private void handleSwitchStatusReport(JSONObject bData) {
+        Log.d(TAG, "📦 Processing switch status report");
+        
+        if (bData != null) {
+            int type = bData.optInt("type", -1);
+            int switchValue = bData.optInt("switch", -1);
+            
+            Log.i(TAG, "📦 Switch status - Type: " + type + ", Switch: " + switchValue);
+            
+            // Send switch status over BLE
+            sendSwitchStatusOverBle(type, switchValue);
+        } else {
+            Log.w(TAG, "📦 Switch status report received but no B field data");
+        }
+    }
+
+    /**
+     * Handle touch event report
+     */
+    private void handleTouchEventReport(JSONObject bData) {
+        Log.d(TAG, "📦 Processing touch event report");
+        
+        if (bData != null) {
+            int type = bData.optInt("type", -1);
+            
+            String gestureType = getTouchGestureType(type);
+            Log.i(TAG, "📦 Touch event - Type: " + gestureType + " (" + type + ")");
+            
+            // Send touch event over BLE
+            sendTouchEventOverBle(type);
+        } else {
+            Log.w(TAG, "📦 Touch event report received but no B field data");
+        }
+    }
+
+    /**
+     * Handle swipe volume status report
+     */
+    private void handleSwipeVolumeStatusReport(JSONObject bData) {
+        Log.d(TAG, "📦 Processing swipe volume status report");
+        
+        if (bData != null) {
+            int switchValue = bData.optInt("switch", -1);
+            boolean isEnabled = (switchValue == 1);
+            
+            Log.i(TAG, "📦 Swipe volume status - Enabled: " + isEnabled);
+            
+            // Send swipe volume status over BLE
+            sendSwipeVolumeStatusOverBle(isEnabled);
+        } else {
+            Log.w(TAG, "📦 Swipe volume status report received but no B field data");
+        }
+    }
+
+    // ---------------------------------------------
+    // BLE Response Senders (Touch/Swipe Only)
+    // ---------------------------------------------
+
+    /**
+     * Send switch status over BLE
+     */
+    private void sendSwitchStatusOverBle(int type, int switchValue) {
+        if (serviceManager != null && serviceManager.getBluetoothManager() != null &&
+                serviceManager.getBluetoothManager().isConnected()) {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("type", "switch_status");
+                obj.put("switch_type", type);
+                obj.put("switch_value", switchValue);
+                obj.put("timestamp", System.currentTimeMillis());
+                
+                String jsonString = obj.toString();
+                Log.d(TAG, "📤 Sending switch status: " + jsonString);
+                serviceManager.getBluetoothManager().sendData(jsonString.getBytes());
+            } catch (JSONException e) {
+                Log.e(TAG, "Error creating switch status JSON", e);
+            }
+        }
+    }
+
+    /**
+     * Send touch event over BLE
+     */
+    private void sendTouchEventOverBle(int type) {
+        if (serviceManager != null && serviceManager.getBluetoothManager() != null &&
+                serviceManager.getBluetoothManager().isConnected()) {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("type", "touch_event");
+                obj.put("gesture_type", type);
+                obj.put("gesture_name", getTouchGestureType(type));
+                obj.put("timestamp", System.currentTimeMillis());
+                
+                String jsonString = obj.toString();
+                Log.d(TAG, "📤 Sending touch event: " + jsonString);
+                serviceManager.getBluetoothManager().sendData(jsonString.getBytes());
+            } catch (JSONException e) {
+                Log.e(TAG, "Error creating touch event JSON", e);
+            }
+        }
+    }
+
+    /**
+     * Send swipe volume status over BLE
+     */
+    private void sendSwipeVolumeStatusOverBle(boolean isEnabled) {
+        if (serviceManager != null && serviceManager.getBluetoothManager() != null &&
+                serviceManager.getBluetoothManager().isConnected()) {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("type", "swipe_volume_status");
+                obj.put("enabled", isEnabled);
+                obj.put("timestamp", System.currentTimeMillis());
+                
+                String jsonString = obj.toString();
+                Log.d(TAG, "📤 Sending swipe volume status: " + jsonString);
+                serviceManager.getBluetoothManager().sendData(jsonString.getBytes());
+            } catch (JSONException e) {
+                Log.e(TAG, "Error creating swipe volume status JSON", e);
+            }
+        }
+    }
+
+    /**
+     * Get touch gesture type name
+     */
+    private String getTouchGestureType(int type) {
+        switch (type) {
+            case 1: return "double_tap";
+            case 2: return "triple_tap";
+            case 3: return "long_press";
+            case 4: return "forward_swipe";
+            case 5: return "backward_swipe";
+            case 6: return "up_swipe";
+            case 7: return "down_swipe";
+            default: return "unknown";
         }
     }
 } 
