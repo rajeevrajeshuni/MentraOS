@@ -16,6 +16,7 @@ public class AsgSettings {
     private static final String KEY_BUTTON_VIDEO_WIDTH = "button_video_width";
     private static final String KEY_BUTTON_VIDEO_HEIGHT = "button_video_height";
     private static final String KEY_BUTTON_VIDEO_FPS = "button_video_fps";
+    private static final String KEY_BUTTON_MAX_RECORDING_TIME_MINUTES = "button_max_recording_time_minutes";
     private static final String KEY_BUTTON_PHOTO_SIZE = "button_photo_size";
     private static final String KEY_BUTTON_CAMERA_LED = "button_camera_led";
     
@@ -69,14 +70,39 @@ public class AsgSettings {
     /**
      * Set button video settings from width, height, and fps values
      * @param width Video width
-     * @param height Video height  
+     * @param height Video height
      * @param fps Video frame rate
      */
     public void setButtonVideoSettings(int width, int height, int fps) {
         VideoSettings settings = new VideoSettings(width, height, fps);
         setButtonVideoSettings(settings);
     }
-    
+
+    /**
+     * Get the maximum recording time for button-initiated videos
+     * @return Maximum recording time in minutes (default 10)
+     */
+    public int getButtonMaxRecordingTimeMinutes() {
+        int minutes = prefs.getInt(KEY_BUTTON_MAX_RECORDING_TIME_MINUTES, 10);
+        Log.d(TAG, "Retrieved button max recording time: " + minutes + " minutes");
+        return minutes;
+    }
+
+    /**
+     * Set the maximum recording time for button-initiated videos
+     * @param minutes Maximum recording time in minutes (3, 5, 10, 15, or 20)
+     */
+    public void setButtonMaxRecordingTimeMinutes(int minutes) {
+        // Validate minutes
+        if (minutes != 3 && minutes != 5 && minutes != 10 && minutes != 15 && minutes != 20) {
+            Log.w(TAG, "Invalid max recording time: " + minutes + " minutes, using 10 minutes");
+            minutes = 10;
+        }
+        Log.d(TAG, "Setting button max recording time to: " + minutes + " minutes");
+        // Using commit() for immediate persistence
+        prefs.edit().putInt(KEY_BUTTON_MAX_RECORDING_TIME_MINUTES, minutes).commit();
+    }
+
     /**
      * Get the photo size setting for button-initiated photos
      * @return Photo size ("small", "medium", or "large")

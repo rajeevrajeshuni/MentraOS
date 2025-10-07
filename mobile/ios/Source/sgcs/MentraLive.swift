@@ -2837,6 +2837,9 @@ extension MentraLive {
         // Send button video recording settings
         sendButtonVideoRecordingSettings()
 
+        // Send button max recording time
+        sendButtonMaxRecordingTime()
+
         // Send button photo settings
         sendButtonPhotoSettings()
 
@@ -2868,6 +2871,23 @@ extension MentraLive {
                 "height": finalHeight,
                 "fps": finalFps,
             ],
+        ]
+        sendJson(json, wakeUp: true)
+    }
+
+    func sendButtonMaxRecordingTime(_ minutes: Int? = nil) {
+        let maxTime = minutes ?? MentraManager.shared.buttonMaxRecordingTimeMinutes
+
+        Bridge.log("Sending button max recording time: \(maxTime) minutes")
+
+        guard connectionState == .connected else {
+            Bridge.log("Cannot send button max recording time - not connected")
+            return
+        }
+
+        let json: [String: Any] = [
+            "type": "button_max_recording_time",
+            "minutes": maxTime,
         ]
         sendJson(json, wakeUp: true)
     }
