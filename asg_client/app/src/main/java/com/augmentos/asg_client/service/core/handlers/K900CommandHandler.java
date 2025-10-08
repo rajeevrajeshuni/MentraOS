@@ -219,12 +219,23 @@ public class K900CommandHandler {
 
         // Get LED setting
         boolean ledEnabled = serviceManager.getAsgSettings().getButtonCameraLedEnabled();
-        
+
+        // Get current battery level
+        int batteryLevel = stateManager.getBatteryLevel();
+
         if (isLongPress) {
-            Log.d(TAG, "📹 Starting video recording (long press) with LED: " + ledEnabled);
+            Log.d(TAG, "📹 Starting video recording (long press) with LED: " + ledEnabled + ", battery: " + batteryLevel + "%");
+
+            // Check if battery is too low to start recording
+            if (batteryLevel >= 0 && batteryLevel < 10) {
+                Log.w(TAG, "⚠️ Battery too low to start recording: " + batteryLevel + "% (minimum 10% required)");
+                return;
+            }
+
             // Get saved video settings for button press
             VideoSettings videoSettings = serviceManager.getAsgSettings().getButtonVideoSettings();
-            captureService.startVideoRecording(videoSettings, ledEnabled);
+            int maxRecordingTimeMinutes = serviceManager.getAsgSettings().getButtonMaxRecordingTimeMinutes();
+            captureService.startVideoRecording(videoSettings, ledEnabled, maxRecordingTimeMinutes, batteryLevel);
         } else {
             // Short press behavior
             // If video is recording, stop it. Otherwise take a photo.

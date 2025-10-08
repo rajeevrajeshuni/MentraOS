@@ -694,6 +694,15 @@ export class MantleBridge extends EventEmitter {
     })
   }
 
+  async sendSetButtonMaxRecordingTime(minutes: number) {
+    return await this.sendData({
+      command: "set_button_max_recording_time",
+      params: {
+        minutes: minutes,
+      },
+    })
+  }
+
   async sendSetButtonCameraLed(enabled: boolean) {
     return await this.sendData({
       command: "set_button_camera_led",

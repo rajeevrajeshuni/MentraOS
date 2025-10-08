@@ -80,6 +80,7 @@ struct ViewState {
     var buttonVideoWidth = 1280
     var buttonVideoHeight = 720
     var buttonVideoFps = 30
+    var buttonMaxRecordingTimeMinutes = 10
     var buttonCameraLed = true
 
     // VAD:
@@ -1002,6 +1003,12 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
+    func setButtonMaxRecordingTime(_ minutes: Int) {
+        buttonMaxRecordingTimeMinutes = minutes
+        sgc?.sendButtonMaxRecordingTime(minutes)
+        handle_request_status() // to update the UI
+    }
+
     func setButtonCameraLed(_: Bool) {
         sgc?.sendButtonCameraLedSetting()
 
@@ -1263,6 +1270,7 @@ struct ViewState {
                 "height": buttonVideoHeight,
                 "fps": buttonVideoFps,
             ],
+            "button_max_recording_time_minutes": buttonMaxRecordingTimeMinutes,
             "button_camera_led": buttonCameraLed,
         ]
 
