@@ -8,7 +8,6 @@ import ChevronRight from "assets/icons/component/ChevronRight"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
 import {useAppStatus, useBackgroundApps} from "@/contexts/AppletStatusProvider"
 import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
-import {isOfflineAppPackage} from "@/types/OfflineApps"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
@@ -123,7 +122,8 @@ export default function BackgroundAppsScreen() {
     optimisticallyStopApp(packageName)
 
     // Skip offline apps - they don't need server communication
-    if (isOfflineAppPackage(packageName)) {
+    const appToStop = active.find(a => a.packageName === packageName)
+    if (appToStop && isOfflineApp(appToStop)) {
       console.log("Skipping offline app stop in background-apps:", packageName)
       clearPendingOperation(packageName)
       return

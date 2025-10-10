@@ -9,7 +9,8 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {AppletInterface} from "@/types/AppletTypes"
-import {getOfflineApps, isOfflineAppPackage} from "@/types/OfflineApps"
+import {getOfflineApps} from "@/types/OfflineApps"
+import {isOfflineApp} from "@/types/AppletTypes"
 import bridge from "@/bridge/MantleBridge"
 import {hasCamera} from "@/config/glassesFeatures"
 import {shouldBlockCameraAppStop} from "@/utils/cameraAppProtection"
@@ -99,7 +100,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
         // Preserve running state from current appStatus for offline apps
         const offlineAppsWithState = appsWithOffline.map(app => {
           // Check if this is an offline app
-          if (isOfflineAppPackage(app.packageName)) {
+          if (isOfflineApp(app)) {
             // Find existing state for this offline app
             const existingApp = currentAppStatus.find((a: AppletInterface) => a.packageName === app.packageName)
 
@@ -175,8 +176,11 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Optimistically update app status when starting an app
   const optimisticallyStartApp = async (packageName: string, appType?: string) => {
+    // Find the app to check if it's offline
+    const app = appStatus.find(a => a.packageName === packageName)
+
     // Check if this is an offline app first
-    if (isOfflineAppPackage(packageName)) {
+    if (app && isOfflineApp(app)) {
       console.log("Starting offline app:", packageName)
       setAppStatus(currentStatus =>
         currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: true, loading: false} : app)),
@@ -211,7 +215,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       for (const runningApp of runningStandardApps) {
         optimisticallyStopApp(runningApp.packageName)
         // Skip offline apps - they don't need server communication
-        if (isOfflineAppPackage(runningApp.packageName)) {
+        if (isOfflineApp(runningApp)) {
           console.log("Skipping offline app in foreground switch:", runningApp.packageName)
           clearPendingOperation(runningApp.packageName)
           continue
@@ -292,7 +296,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
       for (const app of runningApps) {
         // Skip offline apps - they don't need server communication
-        if (isOfflineAppPackage(app.packageName)) {
+        if (isOfflineApp(app)) {
           // Special protection for Camera app when Mentra Live is connected
           if (shouldBlockCameraAppStop(app.packageName, status)) {
             console.log("🛡️ Camera app protection active in stopAllApps - skipping during Mentra Live connection")
@@ -322,8 +326,11 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Optimistically update app status when stopping an app
   const optimisticallyStopApp = async (packageName: string) => {
+    // Find the app to check if it's offline
+    const app = appStatus.find(a => a.packageName === packageName)
+
     // Check if this is an offline app first
-    if (isOfflineAppPackage(packageName)) {
+    if (app && isOfflineApp(app)) {
       console.log("Stopping offline app:", packageName)
 
       // Special protection for Camera app when Mentra Live is connected
@@ -461,7 +468,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
         if (cameraApp && !cameraApp.is_running) {
           console.log(`📸 Glasses with camera connected (${glassesModelName}) - auto-starting camera app`)
-          optimisticallyStartApp("com.mentra.camera", "offline")
+          optimisticallyStartApp("com.mentra.camera", "standard")
         } else {
           console.log("📸 Camera app already running or not found")
         }

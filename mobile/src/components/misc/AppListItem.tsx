@@ -8,12 +8,14 @@ import {Switch, Text} from "@/components/ignite"
 import {TooltipIcon} from "assets/icons/component/TooltipIcon"
 import Toast from "react-native-toast-message"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+import {isOfflineApp as checkIsOfflineApp} from "@/types/AppletTypes"
 
 interface AppModel {
   name: string
   packageName: string
   type: string
   isOnline?: boolean | null
+  isOffline?: boolean
   compatibility?: {
     isCompatible: boolean
     message?: string
@@ -89,7 +91,7 @@ export const AppListItem = ({
           <Tag
             isActive={isActive}
             isForeground={app.type == "standard"}
-            isOfflineApp={app.type === "offline"}
+            isOfflineApp={checkIsOfflineApp(app as any)}
             isIncompatible={isIncompatible}
           />
         </View>

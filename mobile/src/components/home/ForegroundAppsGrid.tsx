@@ -7,7 +7,6 @@ import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
 import {useActiveForegroundApp, useAppStatus, useNewUiForegroundApps} from "@/contexts/AppletStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
-import {isOfflineAppPackage} from "@/types/OfflineApps"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
@@ -125,7 +124,8 @@ export const ForegroundAppsGrid: React.FC = () => {
       optimisticallyStopApp(packageName)
 
       // Skip offline apps - they don't need server communication
-      if (isOfflineAppPackage(packageName)) {
+      const appToStop = foregroundApps.find(a => a.packageName === packageName)
+      if (appToStop && isOfflineApp(appToStop)) {
         console.log("Skipping offline app stop in ForegroundAppsGrid:", packageName)
         clearPendingOperation(packageName)
         return
@@ -139,7 +139,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         console.error("Stop app error:", error)
       }
     },
-    [optimisticallyStopApp, clearPendingOperation, refreshAppStatus],
+    [foregroundApps, optimisticallyStopApp, clearPendingOperation, refreshAppStatus],
   )
 
   const gridData = useMemo(() => {
@@ -258,7 +258,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       }
 
       const isOffline = item.isOnline === false
-      const isOfflineApp = item.type === "offline"
+      const isOfflineAppItem = isOfflineApp(item)
 
       return (
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
@@ -269,7 +269,7 @@ export const ForegroundAppsGrid: React.FC = () => {
                 <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
               </View>
             )}
-            {isOfflineApp && (
+            {isOfflineAppItem && (
               <View style={themed($offlineAppIndicator)}>
                 <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
               </View>

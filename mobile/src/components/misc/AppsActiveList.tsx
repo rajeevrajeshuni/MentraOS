@@ -2,7 +2,6 @@ import {useMemo, useState, useRef, useEffect} from "react"
 import {View, ViewStyle, Animated, Easing} from "react-native"
 import {useAppStatus} from "@/contexts/AppletStatusProvider"
 import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
-import {isOfflineAppPackage} from "@/types/OfflineApps"
 import EmptyAppsView from "../home/EmptyAppsView"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -135,7 +134,8 @@ export default function AppsActiveList({
     optimisticallyStopApp(packageName)
 
     // Skip offline apps - they don't need server communication
-    if (isOfflineAppPackage(packageName)) {
+    const appToStop = appStatus.find(a => a.packageName === packageName)
+    if (appToStop && isOfflineApp(appToStop)) {
       console.log("Skipping offline app stop in AppsActiveList:", packageName)
       clearPendingOperation(packageName)
       setIsLoading(false)

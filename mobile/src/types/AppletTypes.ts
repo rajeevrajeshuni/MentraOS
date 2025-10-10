@@ -14,6 +14,9 @@ export interface AppletPermission {
   required?: boolean
 }
 
+// App execution model types
+export type AppletType = "standard" | "background"
+
 // Define the AppletInterface based on AppI from SDK
 export interface AppletInterface {
   packageName: string
@@ -24,7 +27,7 @@ export interface AppletInterface {
   uninstallable?: boolean
   webviewURL?: string
   logoURL: string | any
-  type: string // "standard", "background", "offline"
+  type: AppletType // "standard" (foreground) or "background"
   appStoreId?: string
   developerId?: string
   hashedEndpointSecret?: string
@@ -58,13 +61,15 @@ export interface AppletInterface {
   }
   // New optional isOnline from backend
   isOnline?: boolean | null
+  // Offline capability flag (defaults to false - apps from internet are online-only)
+  isOffline?: boolean // Works without internet connection
   // Offline app configuration
   offlineRoute?: string // React Native route for offline apps
 }
 
 // Utility functions for offline apps
 export const isOfflineApp = (app: AppletInterface): boolean => {
-  return app.type === "offline" || !!app.offlineRoute
+  return app.isOffline === true
 }
 
 export const getOfflineAppRoute = (app: AppletInterface): string | null => {

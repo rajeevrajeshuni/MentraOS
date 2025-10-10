@@ -127,7 +127,7 @@ const GridItem: FC<{
 
   const isForeground = item.type === "standard"
   const isOffline = item.isOnline === false
-  const isOfflineApp = item.type === "offline"
+  const isOfflineAppItem = isOfflineApp(item)
 
   return (
     <TouchableOpacity ref={setRef} style={themed($gridItem)} onPress={handlePress} activeOpacity={0.7}>
@@ -143,7 +143,7 @@ const GridItem: FC<{
             <TreeIcon size={theme.spacing.md} color={theme.colors.text} />
           </View>
         )}
-        {isOfflineApp && (
+        {isOfflineAppItem && (
           <View style={themed($offlineAppIndicator)}>
             <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
           </View>
