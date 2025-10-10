@@ -196,17 +196,18 @@ public class K900CommandHandler {
         boolean isSaveInGalleryMode = serviceManager
             .getAsgSettings()
             .isSaveInGalleryMode();
-        
-        // Check if glasses are disconnected from phone
-        boolean isDisconnected = !serviceManager.isConnected();
-        
-        if (!isSaveInGalleryMode && !isDisconnected) {
-            Log.d(TAG, "📸 Camera app not active and glasses connected - skipping local capture (button press already forwarded to apps)");
+
+        // Check if glasses are connected to phone
+        boolean isConnected = serviceManager.isConnected();
+
+        // Skip capture only if: camera app NOT running AND phone IS connected
+        if (!isSaveInGalleryMode && isConnected) {
+            Log.d(TAG, "📸 Camera app not active and connected to phone - skipping local capture (button press already forwarded to apps)");
             return;
         }
-        
-        if (isDisconnected) {
-            Log.d(TAG, "📸 Glasses disconnected from phone - proceeding with local capture regardless of gallery mode");
+
+        if (!isConnected) {
+            Log.d(TAG, "📸 Disconnected from phone - proceeding with local capture regardless of gallery mode");
         } else {
             Log.d(TAG, "📸 Camera app active - proceeding with local capture");
         }
