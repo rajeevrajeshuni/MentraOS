@@ -13,6 +13,8 @@ import consoleAccountApi from "./console/console.account.api";
 import orgsApi from "./console/orgs.api";
 import consoleAppsApi from "./console/console.apps.api";
 import livekitApi from "./client/livekit.api";
+import calendarApi from "./client/calendar.api";
+import locationApi from "./client/location.api";
 
 // Legacy route modules (to be migrated gradually)
 import appRoutes from "../routes/apps.routes";
@@ -47,6 +49,8 @@ export function registerApi(app: Application) {
   app.use("/api/client/feedback", feedbackApi);
   app.use("/api/client/min-version", minVersionApi);
   app.use("/api/client/livekit", livekitApi);
+  app.use("/api/client/calendar", calendarApi);
+  app.use("/api/client/location", locationApi);
 
   app.use("/api/sdk", sdkVersionApi);
   app.use("/api/sdk/version", sdkVersionApi);

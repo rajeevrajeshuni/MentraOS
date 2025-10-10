@@ -140,7 +140,7 @@
     },
     "packages/sdk": {
       "name": "@mentra/sdk",
-      "version": "2.1.28",
+      "version": "2.1.27",
       "bin": {
         "mentra": "./dist/cli.js",
       },
