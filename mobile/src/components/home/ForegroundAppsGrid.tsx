@@ -52,6 +52,13 @@ export const ForegroundAppsGrid: React.FC = () => {
         return
       }
 
+      // Handle offline apps - activate only (no server communication needed)
+      if (isOfflineApp(app)) {
+        console.log("Starting offline app in ForegroundAppsGrid:", packageName)
+        optimisticallyStartApp(packageName, app.type)
+        return
+      }
+
       // First check permissions for the app
       const permissionResult = await askPermissionsUI(app, theme)
       if (permissionResult === -1) {
@@ -269,6 +276,7 @@ export const ForegroundAppsGrid: React.FC = () => {
                 <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
               </View>
             )}
+            {/* Show home badge for offline apps, but not for camera app (it has custom icon) */}
             {isOfflineAppItem && (
               <View style={themed($offlineAppIndicator)}>
                 <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
@@ -337,10 +345,10 @@ const $appContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginBottom: spacing.xs,
 })
 
-const $appIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $appIcon: ThemedStyle<ViewStyle> = () => ({
   width: 64,
   height: 64,
-  borderRadius: spacing.sm,
+  // borderRadius is handled by AppIcon component based on squircle settings
 })
 
 const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

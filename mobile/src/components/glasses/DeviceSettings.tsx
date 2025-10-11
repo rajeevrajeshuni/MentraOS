@@ -15,12 +15,14 @@ import {PermissionFeatures, requestFeaturePermissions} from "@/utils/Permissions
 import RouteButton from "@/components/ui/RouteButton"
 import ActionButton from "@/components/ui/ActionButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {glassesFeatures, hasBrightness, hasCustomMic} from "@/config/glassesFeatures"
+import {glassesFeatures, hasBrightness, hasCustomMic, hasConfigurableButton} from "@/config/glassesFeatures"
 import {localStorageService} from "@/services/asg/localStorageService"
 import {SvgXml} from "react-native-svg"
 import OtaProgressSection from "./OtaProgressSection"
 import InfoSection from "@/components/ui/InfoSection"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {AppPicker} from "@/components/misc/AppPicker"
+import {useAppStatus} from "@/contexts/AppletStatusProvider"
 
 // Icon components defined directly in this file to avoid path resolution issues
 interface CaseIconProps {
@@ -84,8 +86,14 @@ export default function DeviceSettings() {
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
   const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.SHOW_ADVANCED_SETTINGS)
   const [_hasLocalPhotos, setHasLocalPhotos] = useState(false)
+  const [defaultButtonActionEnabled, setDefaultButtonActionEnabled] = useSetting(
+    SETTINGS_KEYS.default_button_action_enabled,
+  )
+  const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
+  const [showAppPicker, setShowAppPicker] = useState(false)
 
   const {push} = useNavigationHistory()
+  const {appStatus} = useAppStatus()
 
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector =
@@ -213,17 +221,6 @@ export default function DeviceSettings() {
   if (!defaultWearable) {
     return (
       <View style={themed($container)}>
-        {/* Show gallery button if there are local photos, even without glasses */}
-        {
-          <View style={themed($galleryButtonContainer)}>
-            <RouteButton
-              label={translate("glasses:gallery")}
-              subtitle={translate("glasses:galleryDescription")}
-              onPress={() => push("/asg/gallery")}
-            />
-          </View>
-        }
-
         <View style={themed($emptyStateContainerWithGallery)}>
           <Text style={themed($emptyStateText)}>
             Glasses settings will appear here.{"\n"}Pair glasses to adjust settings.
@@ -300,12 +297,6 @@ export default function DeviceSettings() {
           </View>
         )}
 
-      <RouteButton
-        label={translate("glasses:gallery")}
-        subtitle={translate("glasses:galleryDescription")}
-        onPress={() => push("/asg/gallery")}
-      />
-
       {hasBrightness(defaultWearable) && isGlassesConnected && (
         <View style={themed($settingsGroup)}>
           <ToggleSetting
@@ -367,6 +358,68 @@ export default function DeviceSettings() {
           onPress={() => push("/settings/camera")}
         />
       )}
+
+      {/* Button Settings - Only show for glasses with configurable buttons */}
+      {defaultWearable && hasConfigurableButton(defaultWearable) && (
+        <View style={themed($settingsGroup)}>
+          <ToggleSetting
+            label="Default Button Action"
+            value={defaultButtonActionEnabled}
+            onValueChange={value => {
+              setDefaultButtonActionEnabled(value)
+            }}
+            containerStyle={{
+              paddingHorizontal: 0,
+              paddingTop: 0,
+              paddingBottom: defaultButtonActionEnabled ? theme.spacing.sm : 0,
+              borderWidth: 0,
+            }}
+          />
+
+          {defaultButtonActionEnabled && (
+            <>
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: theme.colors.separator,
+                  marginBottom: theme.spacing.sm,
+                }}
+              />
+              <TouchableOpacity
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+                onPress={() => setShowAppPicker(true)}>
+                <View style={{flex: 1}}>
+                  <Text style={{color: theme.colors.text, fontSize: 14, fontWeight: "500", marginBottom: 4}}>
+                    Default App
+                  </Text>
+                  <Text style={{color: theme.colors.textDim, fontSize: 13}}>
+                    {appStatus.find(app => app.packageName === defaultButtonActionApp)?.name || "Select app"}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.textDim} />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
+
+      {/* AppPicker Modal */}
+      <AppPicker
+        visible={showAppPicker}
+        onClose={() => setShowAppPicker(false)}
+        onSelect={app => {
+          setDefaultButtonActionApp(app.packageName)
+        }}
+        apps={appStatus}
+        selectedPackageName={defaultButtonActionApp}
+        title="Select Default App"
+        filterPredicate={app => app.type === "standard"} // Only show foreground apps
+        showCompatibilityWarnings={true}
+      />
 
       {/* Only show WiFi settings if connected glasses support WiFi */}
       {defaultWearable && glassesFeatures[defaultWearable]?.wifi && (
@@ -573,11 +626,6 @@ const $advancedSettingsLabel: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
   fontSize: 16,
   fontWeight: "600",
-})
-
-const $galleryButtonContainer: ThemedStyle<ViewStyle> = ({spacing: _spacing}) => ({
-  marginTop: _spacing.xl,
-  marginBottom: _spacing.lg,
 })
 
 const $emptyStateContainerWithGallery: ThemedStyle<ViewStyle> = ({spacing}) => ({

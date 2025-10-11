@@ -222,3 +222,17 @@ export function hasCamera(wearable: string | null): boolean {
 
   return featureSet.camera
 }
+
+export function hasConfigurableButton(wearable: string | null): boolean {
+  if (!wearable) {
+    return false
+  }
+
+  const featureSet = glassesFeatures[wearable]
+
+  if (!featureSet) {
+    return false
+  }
+
+  return featureSet.configurableButton
+}

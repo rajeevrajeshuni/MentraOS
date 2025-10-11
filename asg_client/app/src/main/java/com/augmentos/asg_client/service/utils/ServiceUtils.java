@@ -271,7 +271,7 @@ public class ServiceUtils {
                         return true;
                     }
 
-                    // Check for MentraLive (rebranded K900 devices)
+                    // Check for MentraLive (K900 devices)
                     if (propLower.contains("mentralive")) {
                         Log.i(TAG, "K900 device detected via MentraLive identifier: " + prop);
                         return true;

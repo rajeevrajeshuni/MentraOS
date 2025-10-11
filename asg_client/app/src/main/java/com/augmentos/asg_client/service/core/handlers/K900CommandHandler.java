@@ -200,6 +200,10 @@ public class K900CommandHandler {
         // Check if glasses are connected to phone
         boolean isConnected = serviceManager.isConnected();
 
+        // LOG CONNECTION STATE FOR DEBUGGING
+        Log.i(TAG, "📸 Photo capture decision - Gallery Mode: " + (isSaveInGalleryMode ? "ACTIVE" : "INACTIVE") +
+                   ", Connection State: " + (isConnected ? "CONNECTED" : "DISCONNECTED"));
+
         // Skip capture only if: camera app NOT running AND phone IS connected
         if (!isSaveInGalleryMode && isConnected) {
             Log.d(TAG, "📸 Camera app not active and connected to phone - skipping local capture (button press already forwarded to apps)");

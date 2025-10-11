@@ -9,7 +9,7 @@ import {translate} from "@/i18n"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import EmptyAppsView from "@/components/home/EmptyAppsView"
 import {TreeIcon} from "assets/icons/component/TreeIcon"
-import {AppletInterface, AppletPermission, isOfflineApp} from "@/types/AppletTypes"
+import {AppletInterface, AppletPermission, isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 // Constants at the top for easy configuration
@@ -219,9 +219,17 @@ export const AppsGridViewRoot: FC<AppsGridViewProps> = ({
 
       const ref = touchableRefs.current.get(app.packageName)
       if (ref) {
-        // Handle offline apps - activate only
+        // Handle offline apps
         if (isOfflineApp(app)) {
-          // Activate the app (make it appear in active apps)
+          // If app is already running, navigate to its route
+          if (app.is_running) {
+            const offlineRoute = getOfflineAppRoute(app)
+            if (offlineRoute) {
+              push(offlineRoute)
+              return
+            }
+          }
+          // If app is not running, activate it
           onStartApp?.(app.packageName)
           return
         }
@@ -235,7 +243,7 @@ export const AppsGridViewRoot: FC<AppsGridViewProps> = ({
         setPopoverVisible(true)
       }
     },
-    [showMaintenanceDialog, popoverVisible, push],
+    [showMaintenanceDialog, popoverVisible, push, onStartApp],
   )
 
   const handlePopoverClose = useCallback(() => {

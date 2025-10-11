@@ -170,6 +170,25 @@ export default function InactiveAppList({
       return
     }
 
+    // Debug: Log camera app properties
+    if (packageName === "com.mentra.camera") {
+      console.log(
+        "📸 Camera app found in appStatus:",
+        JSON.stringify(
+          {
+            packageName: appInfo.packageName,
+            name: appInfo.name,
+            isOffline: appInfo.isOffline,
+            isOnline: appInfo.isOnline,
+            type: appInfo.type,
+          },
+          null,
+          2,
+        ),
+      )
+      console.log("📸 isOfflineApp check result:", isOfflineApp(appInfo))
+    }
+
     // Handle offline apps - activate only
     if (isOfflineApp(appInfo)) {
       // Activate the app (make it appear in active apps)

@@ -138,11 +138,11 @@ export default function GallerySettingsScreen() {
             title="Gallery Statistics"
             items={[
               {
-                label: "Photos on Device",
+                label: "Photos on Phone",
                 value: localPhotoCount.toString(),
               },
               {
-                label: "Videos on Device",
+                label: "Videos on Phone",
                 value: localVideoCount.toString(),
               },
               {
@@ -154,7 +154,7 @@ export default function GallerySettingsScreen() {
                 value: glassesVideoCount > 0 ? glassesVideoCount.toString() : "—",
               },
               {
-                label: "Storage Used",
+                label: "Phone Storage Used",
                 value: formatBytes(totalStorageSize),
               },
             ]}

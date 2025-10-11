@@ -367,6 +367,17 @@ export class MantleBridge extends EventEmitter {
           console.log("APP_STOPPED_EVENT", data.packageName)
           GlobalEventEmitter.emit("APP_STOPPED_EVENT", data.packageName)
           break
+        case "button_press":
+          console.log("🔘 BUTTON_PRESS event received:", data)
+          // Emit event to React Native layer for handling
+          GlobalEventEmitter.emit("BUTTON_PRESS", {
+            buttonId: data.buttonId,
+            pressType: data.pressType,
+            timestamp: data.timestamp,
+          })
+          // Also forward to server for apps that need it
+          socketComms.sendButtonPress(data.buttonId, data.pressType)
+          break
         case "audio_play_request":
           await AudioPlayService.handle_audio_play_request(data)
           break
