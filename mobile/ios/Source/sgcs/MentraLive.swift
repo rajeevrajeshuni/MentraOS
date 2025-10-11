@@ -2341,14 +2341,20 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("💓 Starting heartbeat mechanism")
         heartbeatCounter = 0
 
+        Bridge.log("💓 Dispatching timer creation to main thread...")
         // Ensure timer is created on main thread (required for RunLoop)
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+            Bridge.log("💓 Inside main.async block")
+            guard let self = self else {
+                Bridge.log("💓 ERROR: self is nil in main.async block!")
+                return
+            }
+            Bridge.log("💓 Creating timer on main thread...")
             self.heartbeatTimer?.invalidate()
             self.heartbeatTimer = Timer.scheduledTimer(withTimeInterval: self.HEARTBEAT_INTERVAL_MS, repeats: true) { [weak self] _ in
                 self?.sendHeartbeat()
             }
-            Bridge.log("💓 Heartbeat timer scheduled on main thread")
+            Bridge.log("💓 Heartbeat timer scheduled on main thread - interval: \(self.HEARTBEAT_INTERVAL_MS)s")
         }
     }
 
@@ -2365,10 +2371,14 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
+        Bridge.log("💓 sendHeartbeat() called - ready: \(ready), connectionState: \(connectionState)")
+
         guard ready, connectionState == .connected else {
-            Bridge.log("Skipping heartbeat - glasses not ready or not connected")
+            Bridge.log("💓 Skipping heartbeat - glasses not ready or not connected (ready=\(ready), state=\(connectionState))")
             return
         }
+
+        Bridge.log("💓 Sending ping and service_heartbeat...")
 
         // Send ping message to glasses hardware (no ACK needed for heartbeats)
         let pingJson: [String: Any] = ["type": "ping"]
