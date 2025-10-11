@@ -677,7 +677,6 @@ public class CameraNeo extends LifecycleService {
                 // Open camera from scratch
                 Log.d(TAG, "Opening camera for photo capture");
                 wakeUpScreen();
-                // Ques: We are opening camera here. But where are we clicking the picture?
                 openCameraInternal(firstRequest.filePath, false);
                 return;
             }
@@ -699,8 +698,6 @@ public class CameraNeo extends LifecycleService {
                     if (pendingRequestedSize != null && nextRequest.size != null) {
                         sizeChanged = !pendingRequestedSize.equals(nextRequest.size);
                     }
-
-                    //Ques: We just go the photo size above. How can it change already?
                     if (sizeChanged) {
                         Log.d(TAG, "Photo size changed, reopening camera");
                         cancelKeepAliveTimer();
