@@ -56,6 +56,16 @@ export const ActiveForegroundApp: React.FC = () => {
           onPress: async () => {
             optimisticallyStopApp(activeForegroundApp.packageName)
 
+            // Skip offline apps - they don't need server communication
+            if (isOfflineApp(activeForegroundApp)) {
+              console.log(
+                "Skipping offline app stop in ActiveForegroundApp (long press):",
+                activeForegroundApp.packageName,
+              )
+              clearPendingOperation(activeForegroundApp.packageName)
+              return
+            }
+
             try {
               await restComms.stopApp(activeForegroundApp.packageName)
               clearPendingOperation(activeForegroundApp.packageName)
@@ -75,6 +85,13 @@ export const ActiveForegroundApp: React.FC = () => {
 
     if (activeForegroundApp) {
       optimisticallyStopApp(activeForegroundApp.packageName)
+
+      // Skip offline apps - they don't need server communication
+      if (isOfflineApp(activeForegroundApp)) {
+        console.log("Skipping offline app stop in ActiveForegroundApp:", activeForegroundApp.packageName)
+        clearPendingOperation(activeForegroundApp.packageName)
+        return
+      }
 
       try {
         await restComms.stopApp(activeForegroundApp.packageName)

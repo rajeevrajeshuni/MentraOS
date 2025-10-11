@@ -350,14 +350,7 @@ export default function DeviceSettings() {
       )}
       {/* Mic selector has been moved to Advanced Settings section below */}
 
-      {/* Camera Settings button for glasses with configurable button */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.configurableButton && (
-        <RouteButton
-          label={translate("settings:cameraSettings")}
-          subtitle={translate("settings:cameraSettingsDescription")}
-          onPress={() => push("/settings/camera")}
-        />
-      )}
+      {/* Camera Settings button moved to Gallery Settings page */}
 
       {/* Button Settings - Only show for glasses with configurable buttons */}
       {defaultWearable && hasConfigurableButton(defaultWearable) && (

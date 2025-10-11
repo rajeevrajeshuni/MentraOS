@@ -1131,16 +1131,21 @@ class MentraLive: NSObject, SGCManager {
             return
         }
 
-        // Set the pending message
-        pending = message
+        // Only set as pending and track ACK if ID is not "-1"
+        // ID of "-1" means no ACK tracking (e.g., for heartbeats)
+        if message.id != "-1" {
+            // Set the pending message
+            pending = message
 
-        // Start retry timer for 1s
-        DispatchQueue.main.async { [weak self] in
-            self?.pendingMessageTimer?.invalidate()
-            self?.pendingMessageTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { _ in
-                self?.handlePendingMessageTimeout()
+            // Start retry timer for 1s
+            DispatchQueue.main.async { [weak self] in
+                self?.pendingMessageTimer?.invalidate()
+                self?.pendingMessageTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { _ in
+                    self?.handlePendingMessageTimeout()
+                }
             }
         }
+        // If ID is "-1", don't track for ACK - just send and forget
     }
 
     private func handlePendingMessageTimeout() {
@@ -2009,9 +2014,12 @@ class MentraLive: NSObject, SGCManager {
         do {
             var json = jsonOriginal
             var messageId: Int64 = -1
+            var trackingId = "-1" // -1 means no ACK tracking needed
+
             if isNewVersion, requireAck {
                 messageId = Int64(globalMessageId)
                 json["mId"] = globalMessageId
+                trackingId = String(globalMessageId)
                 globalMessageId += 1
             }
 
@@ -2042,7 +2050,11 @@ class MentraLive: NSObject, SGCManager {
                             let packedData = packJson(chunkStr, wakeUp: wakeUp && index == 0) ?? Data() // Only wakeup on first chunk
 
                             // Queue the chunk for sending
-                            queueSend(packedData, id: "chunk_\(index)_\(String(globalMessageId - 1))")
+                            // Only track ACK for the final chunk (which has the mId)
+                            // All other chunks get "-1" (no ACK tracking)
+                            let isFinalChunk = (index == chunks.count - 1)
+                            let chunkTrackingId = (requireAck && isFinalChunk) ? trackingId : "-1"
+                            queueSend(packedData, id: chunkTrackingId)
 
                             // Add small delay between chunks to avoid overwhelming the connection
                             if index < chunks.count - 1 {
@@ -2056,7 +2068,7 @@ class MentraLive: NSObject, SGCManager {
                     // Normal single message transmission
                     Bridge.log("Sending data to glasses: \(jsonString)")
                     let packedData = packJson(jsonString, wakeUp: wakeUp) ?? Data()
-                    queueSend(packedData, id: String(globalMessageId - 1))
+                    queueSend(packedData, id: trackingId)
                 }
             }
         } catch {
@@ -2341,20 +2353,13 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("💓 Starting heartbeat mechanism")
         heartbeatCounter = 0
 
-        Bridge.log("💓 Dispatching timer creation to main thread...")
         // Ensure timer is created on main thread (required for RunLoop)
         DispatchQueue.main.async { [weak self] in
-            Bridge.log("💓 Inside main.async block")
-            guard let self = self else {
-                Bridge.log("💓 ERROR: self is nil in main.async block!")
-                return
-            }
-            Bridge.log("💓 Creating timer on main thread...")
+            guard let self = self else { return }
             self.heartbeatTimer?.invalidate()
             self.heartbeatTimer = Timer.scheduledTimer(withTimeInterval: self.HEARTBEAT_INTERVAL_MS, repeats: true) { [weak self] _ in
                 self?.sendHeartbeat()
             }
-            Bridge.log("💓 Heartbeat timer scheduled on main thread - interval: \(self.HEARTBEAT_INTERVAL_MS)s")
         }
     }
 
@@ -2371,14 +2376,10 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
-        Bridge.log("💓 sendHeartbeat() called - ready: \(ready), connectionState: \(connectionState)")
-
         guard ready, connectionState == .connected else {
-            Bridge.log("💓 Skipping heartbeat - glasses not ready or not connected (ready=\(ready), state=\(connectionState))")
+            Bridge.log("Skipping heartbeat - glasses not ready or not connected")
             return
         }
-
-        Bridge.log("💓 Sending ping and service_heartbeat...")
 
         // Send ping message to glasses hardware (no ACK needed for heartbeats)
         let pingJson: [String: Any] = ["type": "ping"]
