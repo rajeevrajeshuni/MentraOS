@@ -36,9 +36,9 @@ export const CameraAppIcon: React.FC<CameraAppIconProps> = ({size = "medium", st
   const containerSize = style?.width || config.container
   const iconSizeValue = style?.width ? (style.width as number) * 0.55 : config.icon // Scale icon to ~55% of container
 
-  // Use border radius matching other app icons
-  // Squircles use theme.spacing.md, regular circles use borderRadius: 60 (which creates a circle)
-  const borderRadius = enableSquircles ? (style?.borderRadius ?? theme.spacing.md) : 60
+  // Use border radius: squircles use theme.spacing.md, circles always use 60 (perfect circle)
+  // When squircles are disabled, always use 60 to create a perfect circle regardless of style prop
+  const borderRadius = enableSquircles ? theme.spacing.md : 60
 
   const iconContent = <MaterialCommunityIcons name="camera-outline" size={iconSizeValue} color={theme.colors.text} />
 
@@ -56,7 +56,6 @@ export const CameraAppIcon: React.FC<CameraAppIconProps> = ({size = "medium", st
             borderRadius: borderRadius,
             overflow: "hidden",
           },
-          style,
         ]}>
         {iconContent}
       </SquircleView>
@@ -72,7 +71,6 @@ export const CameraAppIcon: React.FC<CameraAppIconProps> = ({size = "medium", st
           height: containerSize,
           borderRadius: borderRadius,
         },
-        style,
       ]}>
       {iconContent}
     </View>

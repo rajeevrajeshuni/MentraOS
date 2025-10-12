@@ -1,4 +1,4 @@
-import {useState, useMemo, useCallback, FC} from "react"
+import {useState, useMemo, useCallback, useEffect, FC} from "react"
 import {View, TouchableOpacity, ViewStyle, TextStyle, Modal, ScrollView, TextInput, Platform} from "react-native"
 import {Text} from "@/components/ignite"
 import AppIcon from "./AppIcon"
@@ -45,6 +45,22 @@ export const AppPicker: FC<AppPickerProps> = ({
 }) => {
   const {themed, theme} = useAppTheme()
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Debug logging when modal opens
+  useEffect(() => {
+    if (visible) {
+      console.log("🔍 AppPicker opened with", apps.length, "total apps")
+      console.log("🔍 Filter predicate exists:", !!filterPredicate)
+      if (filterPredicate) {
+        const filtered = apps.filter(filterPredicate)
+        console.log("🔍 After filter predicate:", filtered.length, "apps")
+        console.log(
+          "🔍 Filtered apps:",
+          filtered.map(a => ({name: a.name, type: a.type, compatible: a.compatibility?.isCompatible})),
+        )
+      }
+    }
+  }, [visible, apps, filterPredicate])
 
   // Filter and search apps
   const filteredApps = useMemo(() => {
@@ -112,7 +128,7 @@ export const AppPicker: FC<AppPickerProps> = ({
             <MaterialCommunityIcons name="magnify" size={20} color={theme.colors.textDim} style={themed($searchIcon)} />
             <TextInput
               style={themed($searchInput)}
-              placeholder={translate("common:search")}
+              placeholder="Search"
               placeholderTextColor={theme.colors.textDim}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -128,6 +144,9 @@ export const AppPicker: FC<AppPickerProps> = ({
 
           {/* App List */}
           <ScrollView style={themed($scrollView)} contentContainerStyle={themed($scrollContent)}>
+            {/* Debug text */}
+            <Text style={{color: theme.colors.text, padding: 10}}>Showing {filteredApps.length} apps</Text>
+
             {filteredApps.length === 0 ? (
               <View style={themed($emptyState)}>
                 <MaterialCommunityIcons name="application-outline" size={48} color={theme.colors.textDim} />
@@ -167,9 +186,6 @@ export const AppPicker: FC<AppPickerProps> = ({
                             />
                           )}
                         </View>
-                        {app.developerName && (
-                          <Text text={app.developerName} style={themed($developerName)} numberOfLines={1} />
-                        )}
                         {!isCompatible && showCompatibilityWarnings && compatibilityMessage && (
                           <View style={themed($warningContainer)}>
                             <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
@@ -200,7 +216,7 @@ const $modalContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
   borderTopLeftRadius: spacing.lg,
   borderTopRightRadius: spacing.lg,
-  maxHeight: "80%",
+  height: "90%", // Changed from maxHeight to height for consistent sizing
   paddingBottom: Platform.OS === "ios" ? spacing.xl : spacing.lg,
 })
 
@@ -226,11 +242,13 @@ const $closeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $searchContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: colors.palette.neutral200,
+  backgroundColor: colors.backgroundAlt,
   borderRadius: spacing.sm,
   marginHorizontal: spacing.lg,
   marginBottom: spacing.md,
   paddingHorizontal: spacing.sm,
+  borderWidth: 1,
+  borderColor: colors.border,
 })
 
 const $searchIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -250,11 +268,13 @@ const $clearButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $scrollView: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
+  minHeight: 400, // Ensure minimum height for scrollview
 })
 
 const $scrollContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingHorizontal: spacing.lg,
   paddingBottom: spacing.lg,
+  flexGrow: 1, // Ensure content can grow
 })
 
 const $emptyState: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -270,10 +290,13 @@ const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 })
 
 const $appItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.neutral100,
+  backgroundColor: colors.backgroundAlt,
   borderRadius: spacing.sm,
   marginBottom: spacing.sm,
   padding: spacing.md,
+  borderWidth: 2,
+  borderColor: colors.border,
+  minHeight: 70, // Ensure minimum height
 })
 
 const $appItemSelected: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -312,12 +335,6 @@ const $appName: ThemedStyle<TextStyle> = ({colors}) => ({
   fontWeight: "600",
   color: colors.text,
   flex: 1,
-})
-
-const $developerName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 13,
-  color: colors.textDim,
-  marginTop: spacing.xxs,
 })
 
 const $badge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
