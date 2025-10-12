@@ -9,10 +9,11 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {AppletInterface} from "@/types/AppletTypes"
-import {getOfflineApps, isOfflineAppPackage} from "@/types/OfflineApps"
+import {getOfflineApps} from "@/types/OfflineApps"
+import {isOfflineApp} from "@/types/AppletTypes"
 import bridge from "@/bridge/MantleBridge"
 import {hasCamera} from "@/config/glassesFeatures"
-import {shouldBlockCameraAppStop} from "@/utils/cameraAppProtection"
+// Camera app protection removed - now handled by default button action system
 
 interface AppStatusContextType {
   appStatus: AppletInterface[]
@@ -99,7 +100,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
         // Preserve running state from current appStatus for offline apps
         const offlineAppsWithState = appsWithOffline.map(app => {
           // Check if this is an offline app
-          if (isOfflineAppPackage(app.packageName)) {
+          if (isOfflineApp(app)) {
             // Find existing state for this offline app
             const existingApp = currentAppStatus.find((a: AppletInterface) => a.packageName === app.packageName)
 
@@ -175,8 +176,11 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Optimistically update app status when starting an app
   const optimisticallyStartApp = async (packageName: string, appType?: string) => {
+    // Find the app to check if it's offline
+    const app = appStatus.find(a => a.packageName === packageName)
+
     // Check if this is an offline app first
-    if (isOfflineAppPackage(packageName)) {
+    if (app && isOfflineApp(app)) {
       console.log("Starting offline app:", packageName)
       setAppStatus(currentStatus =>
         currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: true, loading: false} : app)),
@@ -211,7 +215,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       for (const runningApp of runningStandardApps) {
         optimisticallyStopApp(runningApp.packageName)
         // Skip offline apps - they don't need server communication
-        if (isOfflineAppPackage(runningApp.packageName)) {
+        if (isOfflineApp(runningApp)) {
           console.log("Skipping offline app in foreground switch:", runningApp.packageName)
           clearPendingOperation(runningApp.packageName)
           continue
@@ -292,28 +296,15 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
       for (const app of runningApps) {
         // Skip offline apps - they don't need server communication
-        if (isOfflineAppPackage(app.packageName)) {
-          // Special protection for Camera app when Mentra Live is connected
-          if (shouldBlockCameraAppStop(app.packageName, status)) {
-            console.log("🛡️ Camera app protection active in stopAllApps - skipping during Mentra Live connection")
-            continue
-          }
+        if (isOfflineApp(app)) {
           console.log("Skipping offline app in stopAllApps:", app.packageName)
           continue
         }
         await restComms.stopApp(app.packageName)
       }
 
-      // Update local state to reflect all apps are stopped, but preserve Camera app if protected
-      setAppStatus(currentStatus =>
-        currentStatus.map(app => {
-          // Keep Camera app running if Mentra Live is connected
-          if (shouldBlockCameraAppStop(app.packageName, status)) {
-            return app // Keep current state
-          }
-          return app.is_running ? {...app, is_running: false} : app
-        }),
-      )
+      // Update local state to reflect all apps are stopped
+      setAppStatus(currentStatus => currentStatus.map(app => (app.is_running ? {...app, is_running: false} : app)))
     } catch (error) {
       console.error("Error stopping all apps:", error)
       throw error
@@ -322,15 +313,12 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
 
   // Optimistically update app status when stopping an app
   const optimisticallyStopApp = async (packageName: string) => {
-    // Check if this is an offline app first
-    if (isOfflineAppPackage(packageName)) {
-      console.log("Stopping offline app:", packageName)
+    // Find the app to check if it's offline
+    const app = appStatus.find(a => a.packageName === packageName)
 
-      // Special protection for Camera app when Mentra Live is connected
-      if (shouldBlockCameraAppStop(packageName, status)) {
-        console.log("🛡️ Camera app protection active - preventing stop during Mentra Live connection")
-        return // Block the stop operation
-      }
+    // Check if this is an offline app first
+    if (app && isOfflineApp(app)) {
+      console.log("Stopping offline app:", packageName)
 
       setAppStatus(currentStatus =>
         currentStatus.map(app => (app.packageName === packageName ? {...app, is_running: false, loading: false} : app)),
@@ -417,6 +405,60 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     }
   }, [])
 
+  // Listen for button press events from glasses
+  useEffect(() => {
+    const onButtonPress = async (event: {buttonId: string; pressType: string; timestamp: number}) => {
+      console.log("🔘 BUTTON_PRESS event in AppletStatusProvider:", event)
+
+      // Only handle short press for V1
+      if (event.pressType !== "short") {
+        console.log("🔘 Ignoring non-short press:", event.pressType)
+        return
+      }
+
+      // Check if default button action is enabled
+      const defaultButtonActionEnabled = await useSettingsStore
+        .getState()
+        .getSetting(SETTINGS_KEYS.default_button_action_enabled)
+
+      if (!defaultButtonActionEnabled) {
+        console.log("🔘 Default button action is disabled")
+        return
+      }
+
+      // Check if any foreground app is running
+      const activeForegroundApp = appStatus.find(app => app.type === "standard" && app.is_running)
+
+      if (activeForegroundApp) {
+        console.log(
+          "🔘 Foreground app is running - button event already sent to server for app:",
+          activeForegroundApp.name,
+        )
+        return
+      }
+
+      // No foreground app running - start default app
+      const defaultAppPackageName = await useSettingsStore
+        .getState()
+        .getSetting(SETTINGS_KEYS.default_button_action_app)
+
+      if (!defaultAppPackageName) {
+        console.log("🔘 No default app configured")
+        return
+      }
+
+      console.log("🔘 Starting default app:", defaultAppPackageName)
+      optimisticallyStartApp(defaultAppPackageName, "standard")
+    }
+
+    // @ts-ignore
+    GlobalEventEmitter.on("BUTTON_PRESS", onButtonPress)
+    return () => {
+      // @ts-ignore
+      GlobalEventEmitter.off("BUTTON_PRESS", onButtonPress)
+    }
+  }, [appStatus, optimisticallyStartApp])
+
   // refresh app status until loaded:
   useEffect(() => {
     if (appStatus.length > 0) return
@@ -455,27 +497,26 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       console.log("📸 Refreshing app status after glasses connect to update compatibility")
       refreshAppStatus()
 
-      // Auto-start camera app when glasses with camera capability connect
+      // Only auto-start camera if NO foreground app is running
       if (hasCamera(glassesModelName)) {
         const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
+        const activeForegroundApp = appStatus.find(app => app.type === "standard" && app.is_running)
 
-        if (cameraApp && !cameraApp.is_running) {
-          console.log(`📸 Glasses with camera connected (${glassesModelName}) - auto-starting camera app`)
-          optimisticallyStartApp("com.mentra.camera", "offline")
-        } else {
-          console.log("📸 Camera app already running or not found")
+        if (cameraApp && !cameraApp.is_running && !activeForegroundApp) {
+          console.log(`📸 No foreground app running - auto-starting camera app`)
+          optimisticallyStartApp("com.mentra.camera", "standard")
+        } else if (activeForegroundApp) {
+          console.log(`📸 Foreground app already running (${activeForegroundApp.name}) - not auto-starting camera`)
+        } else if (cameraApp?.is_running) {
+          console.log("📸 Camera app already running")
         }
       }
     } else {
-      // Glasses disconnected - auto-close camera app and refresh to update compatibility
-      const cameraApp = appStatus.find(app => app.packageName === "com.mentra.camera")
+      // Glasses disconnected - DO NOT auto-stop camera app
+      // User controls camera app state manually
+      console.log("📸 Glasses disconnected - camera app state unchanged")
 
-      if (cameraApp && cameraApp.is_running) {
-        console.log("📸 Glasses disconnected - auto-stopping camera app")
-        optimisticallyStopApp("com.mentra.camera")
-      }
-
-      // Refresh app status to re-evaluate compatibility (camera app will show as incompatible or hidden)
+      // Refresh app status to re-evaluate compatibility (camera app will show as incompatible)
       console.log("📸 Refreshing app status after glasses disconnect to update compatibility")
       refreshAppStatus()
     }

@@ -10,18 +10,26 @@ import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 import restComms from "@/managers/RestComms"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {attemptAppStop} from "@/utils/cameraAppProtection"
+import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
+// Camera app protection removed - now handled by default button action system
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const activeForegroundApp = useActiveForegroundApp()
   const {optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
-  const {status} = useCoreStatus()
 
   const handlePress = () => {
     if (activeForegroundApp) {
+      // Handle offline apps - navigate directly to React Native route
+      if (isOfflineApp(activeForegroundApp)) {
+        const offlineRoute = getOfflineAppRoute(activeForegroundApp)
+        if (offlineRoute) {
+          push(offlineRoute)
+          return
+        }
+      }
+
       // Check if app has webviewURL and navigate directly to it
       if (activeForegroundApp.webviewURL && activeForegroundApp.isOnline !== false) {
         push("/applet/webview", {
@@ -40,11 +48,6 @@ export const ActiveForegroundApp: React.FC = () => {
 
   const handleLongPress = () => {
     if (activeForegroundApp) {
-      // Check for Camera app protection
-      if (attemptAppStop(activeForegroundApp.packageName, status, theme)) {
-        return // Block the stop operation
-      }
-
       showAlert("Stop App", `Do you want to stop ${activeForegroundApp.name}?`, [
         {text: "Cancel", style: "cancel"},
         {
@@ -52,6 +55,16 @@ export const ActiveForegroundApp: React.FC = () => {
           style: "destructive",
           onPress: async () => {
             optimisticallyStopApp(activeForegroundApp.packageName)
+
+            // Skip offline apps - they don't need server communication
+            if (isOfflineApp(activeForegroundApp)) {
+              console.log(
+                "Skipping offline app stop in ActiveForegroundApp (long press):",
+                activeForegroundApp.packageName,
+              )
+              clearPendingOperation(activeForegroundApp.packageName)
+              return
+            }
 
             try {
               await restComms.stopApp(activeForegroundApp.packageName)
@@ -71,12 +84,14 @@ export const ActiveForegroundApp: React.FC = () => {
     event.stopPropagation()
 
     if (activeForegroundApp) {
-      // Check for Camera app protection
-      if (attemptAppStop(activeForegroundApp.packageName, status, theme)) {
-        return // Block the stop operation
-      }
-
       optimisticallyStopApp(activeForegroundApp.packageName)
+
+      // Skip offline apps - they don't need server communication
+      if (isOfflineApp(activeForegroundApp)) {
+        console.log("Skipping offline app stop in ActiveForegroundApp:", activeForegroundApp.packageName)
+        clearPendingOperation(activeForegroundApp.packageName)
+        return
+      }
 
       try {
         await restComms.stopApp(activeForegroundApp.packageName)

@@ -8,6 +8,7 @@ import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {SquircleView} from "expo-squircle-view"
 import {useSetting, SETTINGS_KEYS} from "@/stores/settings"
+import {CameraAppIcon} from "./CameraAppIcon"
 
 interface AppIconProps {
   app: AppletInterface
@@ -25,6 +26,19 @@ const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator =
   const [newUi] = useSetting(SETTINGS_KEYS.new_ui)
   const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
 
+  // Use custom camera icon for camera app
+  const isCameraApp = app.packageName === "com.mentra.camera"
+
+  // Determine size based on style prop - handle various sizes used across the app
+  const getIconSize = (): "small" | "medium" | "large" => {
+    const width = style?.width
+    if (!width) return "medium"
+    if (width <= 40) return "small"
+    if (width >= 64) return "large"
+    return "medium"
+  }
+  const iconSize = getIconSize()
+
   return (
     <WrapperComponent
       onPress={onClick}
@@ -32,7 +46,16 @@ const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator =
       style={[themed($container), style]}
       accessibilityLabel={onClick ? `Launch ${app.name}` : undefined}
       accessibilityRole={onClick ? "button" : undefined}>
-      {Platform.OS === "ios" && enableSquircles ? (
+      {isCameraApp ? (
+        <>
+          {app.loading && newUi && !hideLoadingIndicator && (
+            <View style={themed($loadingContainer)}>
+              <ActivityIndicator size="small" color={theme.colors.tint} />
+            </View>
+          )}
+          <CameraAppIcon size={iconSize} style={style} />
+        </>
+      ) : Platform.OS === "ios" && enableSquircles ? (
         <SquircleView
           cornerSmoothing={100}
           preserveSmoothing={true}

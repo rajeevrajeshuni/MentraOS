@@ -24,7 +24,8 @@ export const getOfflineAppsConfig = (isDark: boolean): AppletInterface[] => [
   {
     packageName: "com.mentra.camera",
     name: "Camera",
-    type: "offline",
+    type: "standard", // Foreground app (only one at a time)
+    isOffline: true, // Works without internet connection
     developerName: "Mentra",
     logoURL: getCameraIcon(isDark),
     permissions: [],
@@ -101,11 +102,4 @@ export const getOfflineApps = (
 export const getOfflineApp = (packageName: string, isDark?: boolean): AppletInterface | undefined => {
   const apps = getOfflineAppsConfig(isDark ?? false)
   return apps.find(app => app.packageName === packageName)
-}
-
-/**
- * Check if a package name corresponds to an offline app
- */
-export const isOfflineAppPackage = (packageName: string): boolean => {
-  return OFFLINE_APPS.some(app => app.packageName === packageName)
 }

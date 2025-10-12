@@ -221,21 +221,14 @@ class Bridge: RCTEventEmitter {
     // MARK: - Hardware Events
 
     static func sendButtonPress(buttonId: String, pressType: String) {
-        do {
-            let event: [String: Any] = [
-                "type": "button_press",
-                "buttonId": buttonId,
-                "pressType": pressType,
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
-
-            let jsonData = try JSONSerialization.data(withJSONObject: event)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building button_press JSON: \(error)")
-        }
+        // Send as typed message so it gets handled locally by MantleBridge.tsx
+        // This allows the React Native layer to process it before forwarding to server
+        let body: [String: Any] = [
+            "buttonId": buttonId,
+            "pressType": pressType,
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+        Bridge.sendTypedMessage("button_press", body: body)
     }
 
     static func sendPhotoResponse(requestId: String, photoUrl: String) {
