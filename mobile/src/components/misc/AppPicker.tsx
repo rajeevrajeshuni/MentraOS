@@ -165,7 +165,7 @@ export const AppPicker: FC<AppPickerProps> = ({
                 return (
                   <TouchableOpacity
                     key={app.packageName}
-                    style={themed(isSelected ? $appItemSelected : $appItem)}
+                    style={themed($appItem)}
                     onPress={() => handleAppPress(app)}
                     disabled={!isCompatible && showCompatibilityWarnings}>
                     <View style={themed($appItemContent)}>
@@ -297,15 +297,6 @@ const $appItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderWidth: 2,
   borderColor: colors.border,
   minHeight: 70, // Ensure minimum height
-})
-
-const $appItemSelected: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.primary100,
-  borderRadius: spacing.sm,
-  marginBottom: spacing.sm,
-  padding: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.palette.primary400,
 })
 
 const $appItemContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
