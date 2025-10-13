@@ -119,7 +119,7 @@ export const glassesFeatures: Record<string, GlassesFeatureSet> = {
   },
   "Simulated Glasses": {
     type: "Simulated Glasses",
-    camera: true,
+    camera: false, // Simulated glasses don't have actual camera hardware
     speakers: true,
     display: true,
     binocular: false,

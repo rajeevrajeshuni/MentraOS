@@ -207,13 +207,6 @@ export const ForegroundAppsGrid: React.FC = () => {
     async (app: GridItem) => {
       console.log("App pressed:", app.packageName, "isGetMoreApps:", app.isGetMoreApps)
 
-      // Handle offline apps - activate only
-      if (isOfflineApp(app)) {
-        // Activate the app (make it appear in active apps)
-        await startApp(app.packageName)
-        return
-      }
-
       // Handle "Get More Apps" specially
       if (app.isGetMoreApps) {
         push("/store")
@@ -221,15 +214,14 @@ export const ForegroundAppsGrid: React.FC = () => {
       }
 
       // Check if there's already an active foreground app and automatically switch
-      if (activeForegroundApp) {
+      // This applies to both online and offline apps
+      if (activeForegroundApp && app.packageName !== activeForegroundApp.packageName) {
         console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
         await stopApp(activeForegroundApp.packageName)
-        await startApp(app.packageName)
-      } else {
-        // No active app, just start this one
-        console.log("Starting app directly:", app.packageName)
-        await startApp(app.packageName)
       }
+
+      // Now start the new app (offline or online)
+      await startApp(app.packageName)
     },
     [activeForegroundApp, push, startApp, stopApp],
   )
