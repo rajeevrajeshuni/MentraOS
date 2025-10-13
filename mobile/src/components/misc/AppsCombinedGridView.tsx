@@ -1,4 +1,4 @@
-import {useState, useCallback, useMemo, useEffect, useRef, memo, FC} from "react"
+import React, {useState, useCallback, useMemo, useEffect, useRef} from "react"
 import {View, ViewStyle, TextStyle, Platform} from "react-native"
 import {TabView, SceneMap, TabBar} from "react-native-tab-view"
 import {AppsGridView} from "./AppsGridView"
@@ -8,7 +8,6 @@ import {Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {ScrollView} from "react-native"
 import {useAppStatus} from "@/contexts/AppletStatusProvider"
-import {isOfflineApp} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -18,7 +17,7 @@ import restComms from "@/managers/RestComms"
 
 interface AppsCombinedGridViewProps {}
 
-const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
+const AppsCombinedGridViewRoot: React.FC<AppsCombinedGridViewProps> = () => {
   const {themed, theme} = useAppTheme()
   const {appStatus, optimisticallyStartApp, optimisticallyStopApp} = useAppStatus()
   const {push} = useNavigationHistory()
@@ -32,8 +31,8 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
   const renderCount = useRef(0)
   renderCount.current += 1
 
-  const handleIndexChange = (_index: number) => {
-    // console.log("handleIndexChange", _index)
+  const handleIndexChange = (index: number) => {
+    // console.log("handleIndexChange", index)
   }
 
   // Handler functions for grid view
@@ -45,14 +44,6 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
         return
       }
 
-      // Handle offline apps - activate only
-      if (isOfflineApp(appInfo)) {
-        // Activate the app (make it appear in active apps)
-        optimisticallyStartApp(packageName, appInfo.type)
-        return
-      }
-
-      // Handle regular cloud apps
       if (!(await restComms.checkAppHealthStatus(appInfo.packageName))) {
         showAlert(translate("errors:appNotOnlineTitle"), translate("errors:appNotOnlineMessage"), [
           {text: translate("common:ok")},
@@ -72,7 +63,7 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
       // Optimistically update UI
       optimisticallyStartApp(packageName, appInfo.type)
     },
-    [appStatus, push],
+    [appStatus],
   )
 
   const handleStopApp = useCallback(
@@ -107,15 +98,10 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
         !(Platform.OS === "ios" && (app.packageName === "cloud.augmentos.notify" || app.name === "Notify")),
     )
 
-    // Sort to put Camera app first, then alphabetical
-    filtered.sort((a, b) => {
-      // Camera app always comes first
-      if (a.packageName === "com.mentra.camera") return -1
-      if (b.packageName === "com.mentra.camera") return 1
-
-      // Otherwise sort alphabetically
-      return a.name.localeCompare(b.name)
-    })
+    // Log apps that were filtered out due to compatibility
+    const incompatibleCount = appStatus.filter(
+      app => !app.is_running && app.compatibility && !app.compatibility.isCompatible,
+    ).length
 
     return filtered
   }, [appStatus, activeApps.length])
@@ -168,8 +154,8 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
   const renderScene = useMemo(
     () =>
       SceneMap({
-        active: memo(ActiveRoute),
-        inactive: memo(InactiveRoute),
+        active: React.memo(ActiveRoute),
+        inactive: React.memo(InactiveRoute),
       }),
     [ActiveRoute, InactiveRoute],
   )
@@ -253,7 +239,7 @@ const AppsCombinedGridViewRoot: FC<AppsCombinedGridViewProps> = () => {
 }
 
 // memoize the component to prevent unnecessary re-renders:
-export const AppsCombinedGridView = memo(AppsCombinedGridViewRoot)
+export const AppsCombinedGridView = React.memo(AppsCombinedGridViewRoot)
 
 const $container: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   flex: 1,
@@ -263,6 +249,10 @@ const $container: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   borderWidth: spacing.xxxs,
   borderColor: colors.border,
   overflow: "hidden",
+})
+
+const $scene: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  // paddingTop moved to ScrollView contentContainerStyle
 })
 
 const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
@@ -275,7 +265,13 @@ const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   overflow: "hidden",
 })
 
-const $indicator: ThemedStyle<ViewStyle> = ({colors}) => ({
+const $emptyText: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 15,
+  color: colors.textDim,
+  fontWeight: "500",
+})
+
+const $indicator: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.text,
   borderRadius: 10,
   height: 2,
@@ -284,6 +280,28 @@ const $indicator: ThemedStyle<ViewStyle> = ({colors}) => ({
   alignItems: "center",
   width: "85%",
   marginLeft: "7.5%",
+})
+
+const $tabBar: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.background,
+  marginHorizontal: spacing.lg,
+  borderTopLeftRadius: spacing.sm,
+  borderTopRightRadius: spacing.sm,
+  borderBottomLeftRadius: 0,
+  borderBottomRightRadius: 0,
+  borderTopWidth: spacing.xxxs,
+  borderLeftWidth: spacing.xxxs,
+  borderRightWidth: spacing.xxxs,
+  borderBottomWidth: 0,
+  borderColor: colors.border,
+  elevation: 0,
+  shadowOpacity: 0,
+  shadowOffset: {width: 0, height: 0},
+  shadowRadius: 0,
+})
+
+const $tabView: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  // paddingHorizontal: spacing.lg,
 })
 
 const $tooltipText: ThemedStyle<TextStyle> = ({colors}) => ({

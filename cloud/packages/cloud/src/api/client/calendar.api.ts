@@ -14,23 +14,25 @@ router.post("/", clientAuthWithUserSession, updateCalendar);
 
 // Handler functions
 // POST     /api/client/user/calendar
-// BODY     { events: ExpoCalendarEvent[] }
 async function updateCalendar(req: Request, res: Response) {
   const _req = req as RequestWithUserSession;
   const userSession = _req.userSession;
-  const { events } = req.body;
+  const { calendar } = req.body;
 
-  if (!events || typeof events !== "object") {
+  if (!calendar || typeof calendar !== "object") {
     return res.status(400).json({
       success: false,
-      message: "events object required",
+      message: "Calendar object required",
     });
   }
 
   try {
-    await userSession.calendarManager.updateEventsFromAPI(events);
+    // TODO(isaiah): Uncomment after implementing calendar manager in UserSession.
+    // const updatedCalendar = await userSession.calendar.updateCalendar(calendar);
     return res.json({
       success: true,
+      // data: { calendar: updatedCalendar },
+      data: { calendar },
       timestamp: new Date(),
     });
   } catch (error) {

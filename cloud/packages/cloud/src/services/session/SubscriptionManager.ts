@@ -30,6 +30,9 @@ export class SubscriptionManager {
     }[]
   > = new Map();
 
+  // Calendar cache (session-scoped)
+  private calendarEventsCache: Array<any> = [];
+
   // Track app reconnect timestamps for empty-subscription grace handling
   private lastAppReconnectAt: Map<string, number> = new Map();
   private readonly CONNECT_GRACE_MS = 8000; // 8 seconds for slower reconnects
@@ -142,6 +145,21 @@ export class SubscriptionManager {
     const hasTranscription = this.transcriptionLikeSubscriptionCount > 0;
     const hasMedia = hasPCM || hasTranscription;
     return { hasMedia, hasPCM, hasTranscription };
+  }
+
+  cacheCalendarEvent(event: any): void {
+    this.calendarEventsCache.push(event);
+    this.logger.info(
+      {
+        userId: this.userSession.userId,
+        count: this.calendarEventsCache.length,
+      },
+      "Cached calendar event",
+    );
+  }
+
+  getAllCalendarEvents(): any[] {
+    return [...this.calendarEventsCache];
   }
 
   async updateSubscriptions(
@@ -275,10 +293,6 @@ export class SubscriptionManager {
       );
     }
 
-    // Notify managers about unsubscribe
-    this.userSession.locationManager.handleUnsubscribe(packageName);
-    this.userSession.calendarManager.handleUnsubscribe(packageName);
-
     await this.syncManagers();
     this.userSession.microphoneManager?.handleSubscriptionChange();
 
@@ -308,7 +322,7 @@ export class SubscriptionManager {
   dispose(): void {
     this.subscriptions.clear();
     this.history.clear();
-
+    this.calendarEventsCache = [];
     this.lastAppReconnectAt.clear();
   }
 
@@ -327,63 +341,35 @@ export class SubscriptionManager {
     this.history.set(packageName, list);
   }
 
-  /**
-   * Deprecated: No longer persist location subscriptions to DB
-   * Location subscriptions are now tracked in-memory only
-   */
   private async persistLocationRate(
-    _packageName: string,
-    _locationRate: string | null,
+    packageName: string,
+    locationRate: string | null,
   ): Promise<UserI | null> {
-    // No-op: location subscriptions are now in-memory only
-    // This method is kept for backward compatibility during migration
-    return null;
-  }
+    try {
+      const user = await User.findOne({ email: this.userSession.userId });
+      if (!user) return null;
 
-  /**
-   * Extract location subscriptions from all app subscriptions.
-   * Returns lightweight data for LocationManager to process.
-   */
-  private getLocationSubscriptions(): Array<{
-    packageName: string;
-    rate: string;
-  }> {
-    const result: Array<{ packageName: string; rate: string }> = [];
-
-    for (const [packageName, subs] of this.subscriptions.entries()) {
-      for (const sub of subs) {
-        // Check for location_stream subscription objects
-        if (
-          typeof sub === "object" &&
-          sub !== null &&
-          "stream" in sub &&
-          (sub as any).stream === StreamType.LOCATION_STREAM
-        ) {
-          const rate = (sub as any).rate;
-          if (rate) {
-            result.push({ packageName, rate });
-          }
+      const sanitizedPackageName = MongoSanitizer.sanitizeKey(packageName);
+      if (!user.locationSubscriptions) {
+        user.locationSubscriptions = new Map();
+      }
+      if (locationRate) {
+        user.locationSubscriptions.set(sanitizedPackageName, {
+          rate: locationRate,
+        });
+      } else {
+        if (user.locationSubscriptions.has(sanitizedPackageName)) {
+          user.locationSubscriptions.delete(sanitizedPackageName);
         }
       }
+      user.markModified("locationSubscriptions");
+      await user.save();
+      return user;
+    } catch (error) {
+      const logger = this.logger.child({ packageName });
+      logger.error(error, "Error persisting location rate");
+      return null;
     }
-
-    return result;
-  }
-
-  /**
-   * Extract calendar subscriptions from all app subscriptions.
-   * Returns list of package names subscribed to calendar events.
-   */
-  private getCalendarSubscriptions(): string[] {
-    const result: string[] = [];
-
-    for (const [packageName, subs] of this.subscriptions.entries()) {
-      if (subs.has(StreamType.CALENDAR_EVENT)) {
-        result.push(packageName);
-      }
-    }
-
-    return result;
   }
 
   private getTranscriptionSubscriptions(): ExtendedStreamType[] {
@@ -429,14 +415,6 @@ export class SubscriptionManager {
         this.userSession.transcriptionManager.ensureStreamsExist(),
         this.userSession.translationManager.ensureStreamsExist(),
       ]);
-
-      // Pass location subscriptions to LocationManager for tier computation + relay
-      const locationSubs = this.getLocationSubscriptions();
-      this.userSession.locationManager.handleSubscriptionUpdate(locationSubs);
-
-      // Pass calendar subscriptions to CalendarManager for relay
-      const calendarSubs = this.getCalendarSubscriptions();
-      this.userSession.calendarManager.handleSubscriptionUpdate(calendarSubs);
     } catch (error) {
       const logger = this.logger.child({ userId: this.userSession.userId });
       logger.error(error, "Error syncing managers with subscriptions");

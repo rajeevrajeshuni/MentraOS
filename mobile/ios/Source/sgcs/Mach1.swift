@@ -53,8 +53,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func sendButtonVideoRecordingSettings() {}
 
-    func sendButtonMaxRecordingTime(_: Int) {}
-
     func sendButtonCameraLedSetting() {}
 
     func exit() {}
@@ -66,8 +64,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func sendHotspotState(_: Bool) {}
 
     func queryGalleryStatus() {}
-
-    func sendGalleryModeActive(_: Bool) {}
 
     func showDashboard() {}
 

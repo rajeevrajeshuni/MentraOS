@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { X, Building } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useNavigate,
+  useSearchParams,
+  Link,
+  useLocation,
+} from "react-router-dom";
+import { Search, X, Building, Lock } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { usePlatform } from "../hooks/usePlatform";
@@ -12,6 +17,7 @@ import { AppI } from "../types";
 import Header from "../components/Header";
 import AppCard from "../components/AppCard";
 import { toast } from "sonner";
+import { Button } from "../components/ui/button";
 import { formatCompatibilityError } from "../utils/errorHandling";
 
 // Extend window interface for React Native WebView
@@ -103,7 +109,7 @@ const AppStore: React.FC = () => {
             setOrgName("Selected Organization");
           }
         }
-      } catch {
+      } catch (err) {
         // console.error("Error fetching public apps:", err);
         setError("Failed to load apps. Please try again.");
         return;
@@ -417,7 +423,7 @@ const AppStore: React.FC = () => {
           } else {
             // console.log("❌ No app found with package name:", value);
           }
-        } catch {
+        } catch (error) {
           // console.error("⚠️ Error searching by package name:", error);
         } finally {
           setIsLoading(false);
@@ -490,8 +496,8 @@ const AppStore: React.FC = () => {
           <div className="my-2 sm:my-4 max-w-2xl mx-auto px-4">
             <p className="text-gray-600 text-left sm:text-center">
               {filteredApps.length}{" "}
-              {filteredApps.length === 1 ? "result" : "results"} for &quot;
-              {searchQuery}&quot;{activeOrgFilter && ` in ${orgName}`}
+              {filteredApps.length === 1 ? "result" : "results"} for "
+              {searchQuery}"{activeOrgFilter && ` in ${orgName}`}
             </p>
           </div>
         )}
@@ -543,7 +549,7 @@ const AppStore: React.FC = () => {
             {searchQuery ? (
               <>
                 <p className="text-gray-500 text-lg">
-                  No apps found for &quot;{searchQuery}&quot;
+                  No apps found for "{searchQuery}"
                   {activeOrgFilter && ` in ${orgName}`}
                 </p>
                 <button

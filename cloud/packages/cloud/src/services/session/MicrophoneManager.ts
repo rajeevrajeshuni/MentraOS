@@ -219,8 +219,8 @@ export class MicrophoneManager {
       hasMedia: state.hasMedia,
     };
     this.logger.debug(
-      this.cachedSubscriptionState,
       "Updated cached subscription state",
+      this.cachedSubscriptionState,
     );
   }
 

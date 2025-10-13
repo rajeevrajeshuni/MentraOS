@@ -145,8 +145,6 @@ class G1: NSObject, SGCManager {
 
     func sendButtonVideoRecordingSettings() {}
 
-    func sendButtonMaxRecordingTime(_: Int) {}
-
     func sendButtonCameraLedSetting() {}
 
     func requestWifiScan() {}
@@ -156,8 +154,6 @@ class G1: NSObject, SGCManager {
     func sendHotspotState(_: Bool) {}
 
     func queryGalleryStatus() {}
-
-    func sendGalleryModeActive(_: Bool) {}
 
     func showDashboard() {}
 

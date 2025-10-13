@@ -7,18 +7,14 @@ import {ThemedStyle} from "@/theme"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
 import InfoSection from "@/components/ui/InfoSection"
-import RouteButton from "@/components/ui/RouteButton"
 import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
 import {translate} from "@/i18n"
 import showAlert from "@/utils/AlertUtils"
-import {glassesFeatures} from "@/config/glassesFeatures"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
 export default function GallerySettingsScreen() {
-  const {goBack, push} = useNavigationHistory()
+  const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
 
   const [autoSaveToCameraRoll, setAutoSaveToCameraRoll] = useState(true)
   const [localPhotoCount, setLocalPhotoCount] = useState(0)
@@ -122,17 +118,6 @@ export default function GallerySettingsScreen() {
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
       <Header title="Gallery Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
       <ScrollView>
-        {/* Camera Settings button for glasses with configurable button */}
-        {defaultWearable && glassesFeatures[defaultWearable]?.configurableButton && (
-          <View style={themed($section)}>
-            <RouteButton
-              label={translate("settings:cameraSettings")}
-              subtitle={translate("settings:cameraSettingsDescription")}
-              onPress={() => push("/settings/camera")}
-            />
-          </View>
-        )}
-
         <View style={themed($sectionCompact)}>
           <Text style={themed($sectionTitle)}>Automatic Sync</Text>
 
@@ -153,11 +138,11 @@ export default function GallerySettingsScreen() {
             title="Gallery Statistics"
             items={[
               {
-                label: "Photos on Phone",
+                label: "Photos on Device",
                 value: localPhotoCount.toString(),
               },
               {
-                label: "Videos on Phone",
+                label: "Videos on Device",
                 value: localVideoCount.toString(),
               },
               {
@@ -169,7 +154,7 @@ export default function GallerySettingsScreen() {
                 value: glassesVideoCount > 0 ? glassesVideoCount.toString() : "—",
               },
               {
-                label: "Phone Storage Used",
+                label: "Storage Used",
                 value: formatBytes(totalStorageSize),
               },
             ]}

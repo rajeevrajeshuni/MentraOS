@@ -1,16 +1,16 @@
 // routes/organization.routes.ts
-import { Router, Request, Response, NextFunction } from "express";
-import { OrganizationService } from "../services/core/organization.service";
-import jwt from "jsonwebtoken";
-import { User } from "../models/user.model";
-import { Types } from "mongoose";
-import { logger as rootLogger } from "../services/logging/pino-logger";
+import { Router, Request, Response, NextFunction } from 'express';
+import { OrganizationService } from '../services/core/organization.service';
+import jwt from 'jsonwebtoken';
+import { User } from '../models/user.model';
+import { Types } from 'mongoose';
+import { logger as rootLogger } from '../services/logging/pino-logger';
 
-const logger = rootLogger.child({ module: "organization.routes" });
+const logger = rootLogger.child({ module: 'organization.routes' });
 const router = Router();
 
 // Constants
-const AUGMENTOS_AUTH_JWT_SECRET = process.env.AUGMENTOS_AUTH_JWT_SECRET || "";
+const AUGMENTOS_AUTH_JWT_SECRET = process.env.AUGMENTOS_AUTH_JWT_SECRET || '';
 
 // Types
 interface OrgRequest extends Request {
@@ -21,17 +21,13 @@ interface OrgRequest extends Request {
 /**
  * Authentication middleware - validates JWT token and adds user email to request
  */
-const authMiddleware = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      message: "Authentication required",
+      message: 'Authentication required'
     });
   }
 
@@ -42,26 +38,24 @@ const authMiddleware = async (
     if (!userData || !(userData as jwt.JwtPayload).email) {
       return res.status(401).json({
         success: false,
-        message: "Invalid token",
+        message: 'Invalid token'
       });
     }
 
-    (req as OrgRequest).userEmail = (
-      (userData as jwt.JwtPayload).email as string
-    ).toLowerCase();
+    (req as OrgRequest).userEmail = ((userData as jwt.JwtPayload).email as string).toLowerCase();
 
     // Check for organization context in headers
-    const orgIdHeader = req.headers["x-org-id"];
-    if (orgIdHeader && typeof orgIdHeader === "string") {
+    const orgIdHeader = req.headers['x-org-id'];
+    if (orgIdHeader && typeof orgIdHeader === 'string') {
       (req as OrgRequest).currentOrgId = new Types.ObjectId(orgIdHeader);
     }
 
     next();
   } catch (error) {
-    logger.error(error, "Token verification error:");
+    logger.error(error, 'Token verification error:');
     return res.status(401).json({
       success: false,
-      message: "Authentication failed",
+      message: 'Authentication failed'
     });
   }
 };
@@ -69,13 +63,13 @@ const authMiddleware = async (
 /**
  * Authorization middleware - checks if user has admin role in organization
  */
-const authz = (requiredRole: "admin" | "member" = "admin") => {
+const authz = (requiredRole: 'admin' | 'member' = 'admin') => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const orgId = req.params.orgId;
     if (!orgId) {
       return res.status(400).json({
         success: false,
-        message: "Organization ID is required",
+        message: 'Organization ID is required'
       });
     }
 
@@ -84,7 +78,7 @@ const authz = (requiredRole: "admin" | "member" = "admin") => {
       if (!userEmail) {
         return res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required'
         });
       }
 
@@ -93,14 +87,14 @@ const authz = (requiredRole: "admin" | "member" = "admin") => {
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: "User not found",
+          message: 'User not found'
         });
       }
 
       // Check permission level
       let hasPermission = false;
 
-      if (requiredRole === "member") {
+      if (requiredRole === 'member') {
         hasPermission = await OrganizationService.isOrgMember(user, orgId);
       } else {
         hasPermission = await OrganizationService.isOrgAdmin(user, orgId);
@@ -109,17 +103,17 @@ const authz = (requiredRole: "admin" | "member" = "admin") => {
       if (!hasPermission) {
         return res.status(403).json({
           success: false,
-          message: "Insufficient permissions for this organization",
+          message: 'Insufficient permissions for this organization'
         });
       }
 
       // Permission granted, continue
       next();
     } catch (error) {
-      logger.error(error as Error, "Authorization error:");
+      logger.error('Authorization error:', error);
       return res.status(500).json({
         success: false,
-        message: "Authorization check failed",
+        message: 'Authorization check failed'
       });
     }
   };
@@ -137,7 +131,7 @@ const listUserOrgs = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
@@ -145,13 +139,13 @@ const listUserOrgs = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: orgs,
+      data: orgs
     });
   } catch (error) {
-    logger.error(error as Error, "Error listing user organizations:");
+    logger.error('Error listing user organizations:', error);
     res.status(500).json({
       success: false,
-      message: "Failed to list organizations",
+      message: 'Failed to list organizations'
     });
   }
 };
@@ -166,7 +160,7 @@ const createOrg = async (req: Request, res: Response) => {
     if (!name) {
       return res.status(400).json({
         success: false,
-        message: "Organization name is required",
+        message: 'Organization name is required'
       });
     }
 
@@ -176,7 +170,7 @@ const createOrg = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
@@ -184,13 +178,13 @@ const createOrg = async (req: Request, res: Response) => {
 
     res.status(201).json({
       success: true,
-      data: newOrg,
+      data: newOrg
     });
   } catch (error) {
-    logger.error(error as Error, "Error creating organization:");
+    logger.error('Error creating organization:', error);
     res.status(500).json({
       success: false,
-      message: "Failed to create organization",
+      message: 'Failed to create organization'
     });
   }
 };
@@ -207,7 +201,7 @@ const getOrg = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
@@ -216,7 +210,7 @@ const getOrg = async (req: Request, res: Response) => {
     if (!isMember) {
       return res.status(403).json({
         success: false,
-        message: "You are not a member of this organization",
+        message: 'You are not a member of this organization'
       });
     }
 
@@ -225,19 +219,19 @@ const getOrg = async (req: Request, res: Response) => {
     if (!org) {
       return res.status(404).json({
         success: false,
-        message: "Organization not found",
+        message: 'Organization not found'
       });
     }
 
     res.json({
       success: true,
-      data: org,
+      data: org
     });
   } catch (error) {
-    logger.error(error as Error, "Error fetching organization:");
+    logger.error('Error fetching organization:', error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch organization",
+      message: 'Failed to fetch organization'
     });
   }
 };
@@ -255,12 +249,12 @@ const updateOrg = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
     // Validate update payload
-    const validFields = ["name", "profile"];
+    const validFields = ['name', 'profile'];
     const sanitizedUpdates: any = {};
 
     for (const field of Object.keys(updates)) {
@@ -269,37 +263,33 @@ const updateOrg = async (req: Request, res: Response) => {
       }
     }
 
-    const updatedOrg = await OrganizationService.updateOrg(
-      orgId,
-      sanitizedUpdates,
-      user,
-    );
+    const updatedOrg = await OrganizationService.updateOrg(orgId, sanitizedUpdates, user);
 
     res.json({
       success: true,
-      data: updatedOrg,
+      data: updatedOrg
     });
   } catch (error: any) {
-    logger.error("Error updating organization:", error);
+    logger.error('Error updating organization:', error);
 
     // Check for specific error types
     if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 403) {
       return res.status(403).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to update organization",
+      message: 'Failed to update organization'
     });
   }
 };
@@ -310,20 +300,20 @@ const updateOrg = async (req: Request, res: Response) => {
 const invite = async (req: Request, res: Response) => {
   try {
     const { orgId } = req.params;
-    const { email, role = "member" } = req.body;
+    const { email, role = 'member' } = req.body;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Email address is required",
+        message: 'Email address is required'
       });
     }
 
     // Validate role
-    if (!["admin", "member"].includes(role)) {
+    if (!['admin', 'member'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid role. Must be admin or member",
+        message: 'Invalid role. Must be admin or member'
       });
     }
 
@@ -333,16 +323,11 @@ const invite = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
-    const inviteToken = await OrganizationService.inviteMember(
-      orgId,
-      email,
-      role,
-      user,
-    );
+    const inviteToken = await OrganizationService.inviteMember(orgId, email, role, user);
 
     // In a real implementation, this would trigger an email through a notification service
 
@@ -351,31 +336,31 @@ const invite = async (req: Request, res: Response) => {
       data: {
         inviteToken,
         inviteeEmail: email,
-        role,
+        role
       },
-      message: `Invitation sent to ${email}`,
+      message: `Invitation sent to ${email}`
     });
   } catch (error: any) {
-    logger.error("Error inviting member:", error);
+    logger.error('Error inviting member:', error);
 
     // Check for specific error types
     if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 403) {
       return res.status(403).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to send invitation",
+      message: 'Failed to send invitation'
     });
   }
 };
@@ -391,15 +376,15 @@ const changeRole = async (req: Request, res: Response) => {
     if (!role) {
       return res.status(400).json({
         success: false,
-        message: "Role is required",
+        message: 'Role is required'
       });
     }
 
     // Validate role
-    if (!["admin", "member"].includes(role)) {
+    if (!['admin', 'member'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid role. Must be admin or member",
+        message: 'Invalid role. Must be admin or member'
       });
     }
 
@@ -409,50 +394,45 @@ const changeRole = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
-    const updatedOrg = await OrganizationService.changeRole(
-      orgId,
-      memberId,
-      role,
-      user,
-    );
+    const updatedOrg = await OrganizationService.changeRole(orgId, memberId, role, user);
 
     res.json({
       success: true,
       data: updatedOrg,
-      message: `Member role updated to ${role}`,
+      message: `Member role updated to ${role}`
     });
   } catch (error: any) {
-    logger.error("Error changing member role:", error);
+    logger.error('Error changing member role:', error);
 
     // Check for specific error types
     if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 403) {
       return res.status(403).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 400) {
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to change member role",
+      message: 'Failed to change member role'
     });
   }
 };
@@ -469,7 +449,7 @@ const remove = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
@@ -477,36 +457,36 @@ const remove = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: "Member removed successfully",
+      message: 'Member removed successfully'
     });
   } catch (error: any) {
-    logger.error("Error removing member:", error);
+    logger.error('Error removing member:', error);
 
     // Check for specific error types
     if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 403) {
       return res.status(403).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 400) {
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to remove member",
+      message: 'Failed to remove member'
     });
   }
 };
@@ -523,7 +503,7 @@ const acceptInvite = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
@@ -532,36 +512,36 @@ const acceptInvite = async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: org,
-      message: "You have successfully joined the organization",
+      message: 'You have successfully joined the organization'
     });
   } catch (error: any) {
-    logger.error("Error accepting invitation:", error);
+    logger.error('Error accepting invitation:', error);
 
     // Check for specific error types
     if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 403) {
       return res.status(403).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 400) {
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to accept invitation",
+      message: 'Failed to accept invitation'
     });
   }
 };
@@ -576,16 +556,14 @@ const deleteOrg = async (req: Request, res: Response) => {
     const user = await User.findOne({ email: userEmail });
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     await OrganizationService.deleteOrg(orgId, user);
 
-    res.json({ success: true, message: "Organization deleted successfully" });
+    res.json({ success: true, message: 'Organization deleted successfully' });
   } catch (error: any) {
-    logger.error("Error deleting organization:", error);
+    logger.error('Error deleting organization:', error);
 
     if (error.statusCode === 404) {
       return res.status(404).json({ success: false, message: error.message });
@@ -597,9 +575,7 @@ const deleteOrg = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: error.message });
     }
 
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to delete organization" });
+    res.status(500).json({ success: false, message: 'Failed to delete organization' });
   }
 };
 
@@ -614,7 +590,7 @@ const resendInvite = async (req: Request, res: Response) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Email address is required",
+        message: 'Email address is required'
       });
     }
 
@@ -624,7 +600,7 @@ const resendInvite = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
@@ -632,35 +608,35 @@ const resendInvite = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Invitation resent to ${email}`,
+      message: `Invitation resent to ${email}`
     });
   } catch (error: any) {
-    logger.error("Error resending invite:", error);
+    logger.error('Error resending invite:', error);
 
     if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 403) {
       return res.status(403).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 400) {
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to resend invitation",
+      message: 'Failed to resend invitation'
     });
   }
 };
@@ -676,7 +652,7 @@ const rescindInvite = async (req: Request, res: Response) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Email address is required",
+        message: 'Email address is required'
       });
     }
 
@@ -686,7 +662,7 @@ const rescindInvite = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: 'User not found'
       });
     }
 
@@ -694,63 +670,43 @@ const rescindInvite = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: "Invitation rescinded successfully",
+      message: 'Invitation rescinded successfully'
     });
   } catch (error: any) {
-    logger.error("Error rescinding invite:", error);
+    logger.error('Error rescinding invite:', error);
 
     if (error.statusCode === 404) {
       return res.status(404).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     if (error.statusCode === 403) {
       return res.status(403).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Failed to rescind invitation",
+      message: 'Failed to rescind invitation'
     });
   }
 };
 
 // Route definitions
-router.get("/", authMiddleware, listUserOrgs);
-router.post("/", authMiddleware, createOrg);
-router.get("/:orgId", authMiddleware, getOrg);
-router.put("/:orgId", authMiddleware, authz("admin"), updateOrg);
-router.delete("/:orgId", authMiddleware, authz("admin"), deleteOrg);
-router.post("/:orgId/members", authMiddleware, authz("admin"), invite);
-router.patch(
-  "/:orgId/members/:memberId",
-  authMiddleware,
-  authz("admin"),
-  changeRole,
-);
-router.delete(
-  "/:orgId/members/:memberId",
-  authMiddleware,
-  authz("admin"),
-  remove,
-);
-router.post("/accept/:token", authMiddleware, acceptInvite);
-router.post(
-  "/:orgId/invites/resend",
-  authMiddleware,
-  authz("admin"),
-  resendInvite,
-);
-router.post(
-  "/:orgId/invites/rescind",
-  authMiddleware,
-  authz("admin"),
-  rescindInvite,
-);
+router.get('/', authMiddleware, listUserOrgs);
+router.post('/', authMiddleware, createOrg);
+router.get('/:orgId', authMiddleware, getOrg);
+router.put('/:orgId', authMiddleware, authz('admin'), updateOrg);
+router.delete('/:orgId', authMiddleware, authz('admin'), deleteOrg);
+router.post('/:orgId/members', authMiddleware, authz('admin'), invite);
+router.patch('/:orgId/members/:memberId', authMiddleware, authz('admin'), changeRole);
+router.delete('/:orgId/members/:memberId', authMiddleware, authz('admin'), remove);
+router.post('/accept/:token', authMiddleware, acceptInvite);
+router.post('/:orgId/invites/resend', authMiddleware, authz('admin'), resendInvite);
+router.post('/:orgId/invites/rescind', authMiddleware, authz('admin'), rescindInvite);
 
 export default router;

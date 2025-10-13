@@ -1,7 +1,6 @@
-import {useMemo, useState, useRef, useEffect} from "react"
+import React, {useMemo, useState, useRef, useEffect} from "react"
 import {View, ViewStyle, Animated, Easing} from "react-native"
 import {useAppStatus} from "@/contexts/AppletStatusProvider"
-import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
 import EmptyAppsView from "../home/EmptyAppsView"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -13,7 +12,6 @@ import AppsHeader from "./AppsHeader"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-// Camera app protection removed - now handled by default button action system
 
 export default function AppsActiveList({
   isSearchPage = false,
@@ -24,7 +22,7 @@ export default function AppsActiveList({
 }) {
   const {appStatus, refreshAppStatus, optimisticallyStopApp, clearPendingOperation} = useAppStatus()
   const [isLoading, setIsLoading] = useState(false)
-  const {themed} = useAppTheme()
+  const {themed, theme} = useAppTheme()
   const [hasEverActivatedApp, setHasEverActivatedApp] = useState(true)
   const {push} = useNavigationHistory()
 
@@ -131,15 +129,6 @@ export default function AppsActiveList({
     // Optimistically update UI first
     optimisticallyStopApp(packageName)
 
-    // Skip offline apps - they don't need server communication
-    const appToStop = appStatus.find(a => a.packageName === packageName)
-    if (appToStop && isOfflineApp(appToStop)) {
-      console.log("Skipping offline app stop in AppsActiveList:", packageName)
-      clearPendingOperation(packageName)
-      setIsLoading(false)
-      return
-    }
-
     setIsLoading(true)
     try {
       await restComms.stopApp(packageName)
@@ -156,16 +145,6 @@ export default function AppsActiveList({
   }
 
   const openAppSettings = (app: any) => {
-    // Handle offline apps - navigate directly to React Native route
-    if (isOfflineApp(app)) {
-      const offlineRoute = getOfflineAppRoute(app)
-      if (offlineRoute) {
-        push(offlineRoute)
-        return
-      }
-    }
-
-    // Handle regular cloud apps
     push("/applet/settings", {packageName: app.packageName, appName: app.name})
   }
 
@@ -183,7 +162,7 @@ export default function AppsActiveList({
           }
           const itemOpacity = opacities[app.packageName]
           return (
-            <View key={app.packageName}>
+            <React.Fragment key={app.packageName}>
               <AppListItem
                 app={app}
                 isActive={true}
@@ -216,7 +195,7 @@ export default function AppsActiveList({
                   <Spacer height={8} />
                 </>
               )}
-            </View>
+            </React.Fragment>
           )
         })}
       </>

@@ -112,10 +112,7 @@ export async function validateApiKey(
 
     return isValid;
   } catch (error) {
-    _logger.error(
-      error as Error,
-      `Error validating API key for ${packageName}:`,
-    );
+    _logger.error(`Error validating API key for ${packageName}:`, error);
     return false;
   }
 }
@@ -178,7 +175,7 @@ export async function createApp(
       jwt,
     };
   } catch (error) {
-    logger.error(error as Error, `Error creating app:`);
+    logger.error(`Error creating app:`, error);
     throw error;
   }
 }
@@ -240,7 +237,7 @@ export async function regenerateApiKey(
       jwt,
     };
   } catch (error) {
-    logger.error(error as Error, `Error regenerating API key:`);
+    logger.error(`Error regenerating API key:`, error);
     throw error;
   }
 }
@@ -251,7 +248,7 @@ export async function regenerateApiKey(
  * @returns Validated and sanitized tools array or throws error if invalid
  */
 function validateToolDefinitions(tools: any[]): any[] {
-  logger.debug({ tools }, "Validating tool definitions:");
+  logger.debug("Validating tool definitions:", tools);
   if (!Array.isArray(tools)) {
     throw new Error("Tools must be an array");
   }

@@ -55,7 +55,7 @@ export default function ThemeSettingsPage() {
   )
 
   return (
-    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="scroll" style={{paddingHorizontal: 20}}>
       <Header title="Theme Settings" leftIcon="caretLeft" onLeftPress={() => replace("/(tabs)/settings")} />
 
       <View style={themed($settingsGroup)}>
