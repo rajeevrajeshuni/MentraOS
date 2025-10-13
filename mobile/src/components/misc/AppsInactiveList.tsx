@@ -31,7 +31,7 @@ export default function InactiveAppList({
   liveCaptionsRef?: RefObject<any>
   onClearSearch?: () => void
 }) {
-  const {appStatus, optimisticallyStartApp} = useAppStatus()
+  const {appStatus, optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation} = useAppStatus()
   const {status: _status} = useCoreStatus()
   const [_onboardingModalVisible, _setOnboardingModalVisible] = useState(false)
   const [onboardingCompleted, setOnboardingCompleted] = useState(true)
@@ -145,6 +145,29 @@ export default function InactiveAppList({
     if (!appInfo) {
       console.error("App not found:", packageName)
       return
+    }
+
+    // If this is a foreground app and there's already one running, stop it first
+    if (appInfo.type === "standard") {
+      const runningForegroundApp = appStatus.find(
+        app => app.is_running && app.type === "standard" && app.packageName !== packageName,
+      )
+      if (runningForegroundApp) {
+        console.log("Stopping running foreground app:", runningForegroundApp.packageName)
+        optimisticallyStopApp(runningForegroundApp.packageName)
+
+        // Skip offline apps - they don't need server communication
+        if (!isOfflineApp(runningForegroundApp)) {
+          try {
+            await restComms.stopApp(runningForegroundApp.packageName)
+            clearPendingOperation(runningForegroundApp.packageName)
+          } catch (error) {
+            console.error("Error stopping foreground app:", error)
+          }
+        } else {
+          clearPendingOperation(runningForegroundApp.packageName)
+        }
+      }
     }
 
     // Debug: Log camera app properties
