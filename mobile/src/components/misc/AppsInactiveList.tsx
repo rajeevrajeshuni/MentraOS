@@ -118,31 +118,8 @@ export default function InactiveAppList({
       return Promise.resolve(true)
     }
 
-    const runningStndAppList = getRunningStandardApps(packageName)
-    if (runningStndAppList.length === 0) {
-      return Promise.resolve(true)
-    }
-
-    return new Promise(resolve => {
-      showAlert(
-        translate("home:thereCanOnlyBeOne"),
-        translate("home:thereCanOnlyBeOneMessage"),
-        [
-          {
-            text: translate("common:cancel"),
-            onPress: () => resolve(false),
-            style: "cancel",
-          },
-          {
-            text: translate("common:continue"),
-            onPress: () => resolve(true),
-          },
-        ],
-        {
-          iconName: "tree",
-        },
-      )
-    })
+    // Always allow starting a new foreground app - it will automatically replace any running one
+    return Promise.resolve(true)
   }
 
   const startApp = async (packageName: string) => {
@@ -275,9 +252,6 @@ export default function InactiveAppList({
     optimisticallyStartApp(packageName)
   }
 
-  const getRunningStandardApps = (packageName: string) => {
-    return appStatus.filter(app => app.is_running && app.type == "standard" && app.packageName !== packageName)
-  }
   const openAppSettings = (app: any) => {
     console.log("%%% opening app settings", app)
 

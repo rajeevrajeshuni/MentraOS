@@ -10,7 +10,6 @@ import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import showAlert from "@/utils/AlertUtils"
 import {performHealthCheckFlow} from "@/utils/healthCheckFlow"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {ThemedStyle} from "@/theme"
@@ -221,23 +220,11 @@ export const ForegroundAppsGrid: React.FC = () => {
         return
       }
 
-      // Check if there's already an active foreground app
+      // Check if there's already an active foreground app and automatically switch
       if (activeForegroundApp) {
-        showAlert(
-          "Only One Foreground App",
-          "There can only be one foreground app active at a time. Would you like to stop the current app and start this one?",
-          [
-            {text: "Cancel", style: "cancel"},
-            {
-              text: "Switch Apps",
-              onPress: async () => {
-                await stopApp(activeForegroundApp.packageName)
-                await startApp(app.packageName)
-              },
-            },
-          ],
-          {cancelable: true},
-        )
+        console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
+        await stopApp(activeForegroundApp.packageName)
+        await startApp(app.packageName)
       } else {
         // No active app, just start this one
         console.log("Starting app directly:", app.packageName)
