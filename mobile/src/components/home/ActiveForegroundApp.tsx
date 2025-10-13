@@ -10,8 +10,6 @@ import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 import restComms from "@/managers/RestComms"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
-import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
-// Camera app protection removed - now handled by default button action system
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
@@ -21,15 +19,6 @@ export const ActiveForegroundApp: React.FC = () => {
 
   const handlePress = () => {
     if (activeForegroundApp) {
-      // Handle offline apps - navigate directly to React Native route
-      if (isOfflineApp(activeForegroundApp)) {
-        const offlineRoute = getOfflineAppRoute(activeForegroundApp)
-        if (offlineRoute) {
-          push(offlineRoute)
-          return
-        }
-      }
-
       // Check if app has webviewURL and navigate directly to it
       if (activeForegroundApp.webviewURL && activeForegroundApp.isOnline !== false) {
         push("/applet/webview", {
@@ -56,16 +45,6 @@ export const ActiveForegroundApp: React.FC = () => {
           onPress: async () => {
             optimisticallyStopApp(activeForegroundApp.packageName)
 
-            // Skip offline apps - they don't need server communication
-            if (isOfflineApp(activeForegroundApp)) {
-              console.log(
-                "Skipping offline app stop in ActiveForegroundApp (long press):",
-                activeForegroundApp.packageName,
-              )
-              clearPendingOperation(activeForegroundApp.packageName)
-              return
-            }
-
             try {
               await restComms.stopApp(activeForegroundApp.packageName)
               clearPendingOperation(activeForegroundApp.packageName)
@@ -85,13 +64,6 @@ export const ActiveForegroundApp: React.FC = () => {
 
     if (activeForegroundApp) {
       optimisticallyStopApp(activeForegroundApp.packageName)
-
-      // Skip offline apps - they don't need server communication
-      if (isOfflineApp(activeForegroundApp)) {
-        console.log("Skipping offline app stop in ActiveForegroundApp:", activeForegroundApp.packageName)
-        clearPendingOperation(activeForegroundApp.packageName)
-        return
-      }
 
       try {
         await restComms.stopApp(activeForegroundApp.packageName)

@@ -9,12 +9,12 @@
  *   bun run src/scripts/migrate-permissions.ts
  */
 
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-import App from "../models/app.model";
-import { PermissionType } from "@mentra/sdk";
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import App from '../models/app.model';
+import { PermissionType } from '@mentra/sdk';
 import { logger } from "../services/logging/pino-logger";
-import * as mongoConnection from "../connections/mongodb.connection";
+import * as mongoConnection from '../connections/mongodb.connection';
 
 // Load environment variables
 dotenv.config();
@@ -22,11 +22,11 @@ dotenv.config();
 // Connect to MongoDB using the existing connection module
 async function connectToDatabase() {
   try {
-    logger.info("Initializing MongoDB connection");
+    logger.info('Initializing MongoDB connection');
     await mongoConnection.init();
-    logger.info("Successfully connected to MongoDB");
+    logger.info('Successfully connected to MongoDB');
   } catch (error) {
-    logger.error(error, "Failed to connect to MongoDB:");
+    logger.error('Failed to connect to MongoDB:', error);
     process.exit(1);
   }
 }
@@ -34,7 +34,7 @@ async function connectToDatabase() {
 // Add ALL permission to all existing apps
 async function migratePermissions() {
   try {
-    logger.info("Starting permissions migration...");
+    logger.info('Starting permissions migration...');
 
     // Get all apps
     const apps = await App.find({});
@@ -46,29 +46,27 @@ async function migratePermissions() {
     // Process each app
     for (const app of apps) {
       try {
+
         // Skip apps that already have permissions defined
         if (app.permissions && app.permissions.length > 0) {
-          logger.info(
-            `Skipping app ${app.packageName}: Permissions already defined`,
-          );
+          logger.info(`Skipping app ${app.packageName}: Permissions already defined`);
           skippedCount++;
           continue;
         }
 
         // Add ALL permission to apps without defined permissions
-        app.permissions = [
-          {
-            type: PermissionType.ALL,
-            description: "Automatically added for backward compatibility",
-          },
-        ];
+        app.permissions = [{
+          type: PermissionType.ALL,
+          description: 'Automatically added for backward compatibility'
+        }];
 
         // Save the updated app
         await app.save();
         logger.info(`Updated app ${app.packageName}: Added ALL permission`);
         updatedCount++;
-      } catch (error) {
-        logger.error(error, `Error updating app ${app.packageName}:`);
+      }
+      catch (error) {
+        logger.error(`Error updating app ${app.packageName}:`, error);
         // Optionally, you can continue or break based on the error
         // continue; // or break;
       }
@@ -80,8 +78,9 @@ Migration completed:
 - Updated with ALL permission: ${updatedCount}
 - Skipped (already had permissions): ${skippedCount}
     `);
+
   } catch (error) {
-    logger.error(error, "Error during migration:");
+    logger.error('Error during migration:', error);
     process.exit(1);
   }
 }
@@ -91,10 +90,10 @@ async function main() {
   try {
     await connectToDatabase();
     await migratePermissions();
-    logger.info("Migration completed successfully");
+    logger.info('Migration completed successfully');
     process.exit(0);
   } catch (error) {
-    logger.error(error, "Migration failed:");
+    logger.error('Migration failed:', error);
     process.exit(1);
   } finally {
     await mongoose.disconnect();

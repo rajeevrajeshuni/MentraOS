@@ -684,8 +684,7 @@ export class AsgCameraApiClient {
 
       // Small delay between batches to prevent overwhelming the server
       if (i + CONCURRENCY_LIMIT < files.length) {
-        console.log(`[ASG Camera API] Waiting 300ms between batches`)
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await new Promise(resolve => setTimeout(resolve, 100))
       }
     }
 

@@ -234,7 +234,7 @@ async function getSessionFromToken(coreToken: string) {
     const userSession = UserSession.getById(userId) || null;
     return userSession;
   } catch (error) {
-    logger.error(error, "Error verifying token or finding session:");
+    logger.error("Error verifying token or finding session:", error);
     return null;
   }
 }
@@ -256,7 +256,7 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
 
     return userId;
   } catch (error) {
-    logger.error(error, "Error verifying token:");
+    logger.error("Error verifying token:", error);
     return null;
   }
 }
@@ -289,10 +289,12 @@ async function getAllApps(req: Request, res: Response) {
       // Add hardware compatibility information to each app
       const appsWithCompatibility = apps.map((app) => {
         let compatibilityInfo = null;
-        const caps = userSession.deviceManager.getCapabilities();
-        if (caps) {
+        if (userSession.capabilities) {
           const compatibilityResult =
-            HardwareCompatibilityService.checkCompatibility(app, caps);
+            HardwareCompatibilityService.checkCompatibility(
+              app,
+              userSession.capabilities,
+            );
 
           compatibilityInfo = {
             isCompatible: compatibilityResult.isCompatible,
@@ -389,11 +391,11 @@ async function getAllApps(req: Request, res: Response) {
     // Add hardware compatibility information to each app
     const appsWithCompatibility = apps.map((app) => {
       let compatibilityInfo = null;
-      if (userSession && userSession.deviceManager.getCapabilities()) {
+      if (userSession && userSession.capabilities) {
         const compatibilityResult =
           HardwareCompatibilityService.checkCompatibility(
             app,
-            userSession.deviceManager.getCapabilities(),
+            userSession.capabilities,
           );
 
         compatibilityInfo = {
@@ -458,7 +460,7 @@ async function getAllApps(req: Request, res: Response) {
       data: finalApps,
     });
   } catch (error) {
-    logger.error(error, "Error fetching apps");
+    logger.error({ error }, "Error fetching apps");
     res.status(500).json({
       success: false,
       message: "Error fetching apps",
@@ -476,11 +478,10 @@ async function getPublicApps(req: Request, res: Response) {
     let apps = await appService.getAllApps();
 
     // Filter apps by hardware compatibility if user has connected glasses
-    const caps = request.userSession?.deviceManager.getCapabilities();
-    if (request.userSession && caps) {
+    if (request.userSession && request.userSession.capabilities) {
       apps = HardwareCompatibilityService.filterCompatibleApps(
         apps,
-        caps,
+        request.userSession.capabilities,
         true, // Include apps with missing optional hardware
       );
     }
@@ -490,7 +491,7 @@ async function getPublicApps(req: Request, res: Response) {
       data: apps,
     });
   } catch (error) {
-    logger.error(error, "Error fetching public apps");
+    logger.error({ error }, "Error fetching public apps");
     res.status(500).json({
       success: false,
       message: "Error fetching public apps",
@@ -539,11 +540,10 @@ async function searchApps(req: Request, res: Response) {
     }
 
     // Filter apps by hardware compatibility if user has connected glasses
-    const caps = request.userSession?.deviceManager.getCapabilities();
-    if (request.userSession && caps) {
+    if (request.userSession && request.userSession.capabilities) {
       searchResults = HardwareCompatibilityService.filterCompatibleApps(
         searchResults,
-        caps,
+        request.userSession.capabilities,
         true, // Include apps with missing optional hardware
       );
     }
@@ -553,7 +553,7 @@ async function searchApps(req: Request, res: Response) {
       data: searchResults,
     });
   } catch (error) {
-    logger.error(error, "Error searching apps:");
+    logger.error("Error searching apps:", error);
     res.status(500).json({
       success: false,
       message: "Error searching apps",
@@ -652,7 +652,7 @@ async function getAppByPackage(req: Request, res: Response) {
       data: appObj,
     });
   } catch (error) {
-    logger.error(error, "Error fetching app");
+    logger.error("Error fetching app:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching app",
@@ -1144,10 +1144,12 @@ async function installApp(req: Request, res: Response) {
     }
 
     // Log hardware compatibility information if user has active session with connected glasses
-    const caps = userSession?.deviceManager.getCapabilities();
-    if (userSession && caps) {
+    if (userSession && userSession.capabilities) {
       const compatibilityResult =
-        HardwareCompatibilityService.checkCompatibility(app, caps);
+        HardwareCompatibilityService.checkCompatibility(
+          app,
+          userSession.capabilities,
+        );
 
       if (!compatibilityResult.isCompatible) {
         logger.info(
@@ -1155,7 +1157,7 @@ async function installApp(req: Request, res: Response) {
             packageName,
             email,
             missingHardware: compatibilityResult.missingRequired,
-            capabilities: caps,
+            capabilities: userSession.capabilities,
           },
           "Installing app with missing required hardware",
         );
@@ -1251,7 +1253,7 @@ async function uninstallApp(req: Request, res: Response) {
         );
       }
     } catch (error) {
-      logger.warn(error, "Error stopping app during uninstall:");
+      logger.warn("Error stopping app during uninstall:", error);
     }
   } catch (error) {
     logger.error(
@@ -1289,10 +1291,12 @@ async function getInstalledApps(req: Request, res: Response) {
 
         // Check hardware compatibility for each app
         let compatibilityInfo = null;
-        const caps = request.userSession?.deviceManager.getCapabilities();
-        if (request.userSession && caps) {
+        if (request.userSession && request.userSession.capabilities) {
           const compatibilityResult =
-            HardwareCompatibilityService.checkCompatibility(appDetails, caps);
+            HardwareCompatibilityService.checkCompatibility(
+              appDetails,
+              request.userSession.capabilities,
+            );
 
           compatibilityInfo = {
             isCompatible: compatibilityResult.isCompatible,
@@ -1327,7 +1331,7 @@ async function getInstalledApps(req: Request, res: Response) {
       data: validApps,
     });
   } catch (error) {
-    logger.error(error, "Error fetching installed apps:");
+    logger.error("Error fetching installed apps:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching installed apps",
@@ -1356,11 +1360,10 @@ async function getAvailableApps(req: Request, res: Response) {
     }
 
     // Filter apps by hardware compatibility if user has connected glasses
-    const caps = request.userSession?.deviceManager.getCapabilities();
-    if (request.userSession && caps) {
+    if (request.userSession && request.userSession.capabilities) {
       apps = HardwareCompatibilityService.filterCompatibleApps(
         apps,
-        caps,
+        request.userSession.capabilities,
         true, // Include apps with missing optional hardware
       );
     }
@@ -1412,7 +1415,7 @@ async function getAvailableApps(req: Request, res: Response) {
       data: enhancedApps,
     });
   } catch (error) {
-    logger.error(error, "Error fetching available apps:");
+    logger.error("Error fetching available apps:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch available apps",

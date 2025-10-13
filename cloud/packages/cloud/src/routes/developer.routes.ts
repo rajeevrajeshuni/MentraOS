@@ -1283,7 +1283,7 @@ const deleteImage = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    logger.error(error as Error, "Error in image delete handler:");
+    logger.error("Error in image delete handler:", error);
     return res
       .status(500)
       .json({ error: "Internal server error during image deletion" });

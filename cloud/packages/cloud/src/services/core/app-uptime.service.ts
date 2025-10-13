@@ -5,6 +5,14 @@ import { logger as rootLogger } from "../logging/pino-logger";
 import axios from "axios";
 import App from "../../models/app.model";
 
+interface AppUptimeI {
+  packageName: string;
+  timestamp: Date;
+  description: string;
+  severity: string;
+  appHealthStatus: string;
+}
+
 const logger = rootLogger.child({ service: "app-uptime.service" }); // Create a specialized logger for this service to help with debugging
 const ONE_MINUTE_MS = 60000;
 let uptimeScheduler: NodeJS.Timeout | null = null; // Store interval reference for cleanup
@@ -40,7 +48,7 @@ export async function pkgHealthCheck(packageName: string): Promise<boolean> {
     });
     return response.status === 200;
   } catch (error) {
-    logger.error(error as Error, `Error checking health for ${packageName}:`);
+    logger.error(`Error checking health for ${packageName}:`, error);
     return false;
   }
 }
@@ -215,7 +223,7 @@ export async function sendBatchUptimeData(): Promise<void> {
       logger.warn("No uptime data to save");
     }
   } catch (error) {
-    logger.error(error, "Error in batch uptime data collection:");
+    logger.error("Error in batch uptime data collection:", error);
     throw error;
   }
 }
@@ -352,7 +360,7 @@ export function startUptimeScheduler(): void {
 
   // Run immediately on start
   sendBatchUptimeData().catch((error) => {
-    logger.error(error, "Initial batch uptime collection failed:");
+    logger.error("Initial batch uptime collection failed:", error);
   });
 
   // Schedule to run every minute (60000 ms)
@@ -360,7 +368,7 @@ export function startUptimeScheduler(): void {
     try {
       await sendBatchUptimeData();
     } catch (error) {
-      logger.error(error, "Scheduled batch uptime collection failed:");
+      logger.error("Scheduled batch uptime collection failed:", error);
     }
   }, ONE_MINUTE_MS);
 }
@@ -433,7 +441,7 @@ export async function collectAllAppBatchStatus(month: string, year: number) {
       data: allUptimeData,
     };
   } catch (error) {
-    logger.error(error, "Error collecting all app batch status:");
+    logger.error("Error collecting all app batch status:", error);
     throw error;
   }
 }

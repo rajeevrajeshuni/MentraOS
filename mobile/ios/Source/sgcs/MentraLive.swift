@@ -792,8 +792,8 @@ class MentraLive: NSObject, SGCManager {
 
     func forget() {}
 
-    var type = "Mentra Live"
-    var hasMic = false
+    let type = "Mentra Live"
+    let hasMic = false
     var isHeadUp = false
     var caseOpen = false
     var caseRemoved = true
@@ -1131,21 +1131,16 @@ class MentraLive: NSObject, SGCManager {
             return
         }
 
-        // Only set as pending and track ACK if ID is not "-1"
-        // ID of "-1" means no ACK tracking (e.g., for heartbeats)
-        if message.id != "-1" {
-            // Set the pending message
-            pending = message
+        // Set the pending message
+        pending = message
 
-            // Start retry timer for 1s
-            DispatchQueue.main.async { [weak self] in
-                self?.pendingMessageTimer?.invalidate()
-                self?.pendingMessageTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { _ in
-                    self?.handlePendingMessageTimeout()
-                }
+        // Start retry timer for 1s
+        DispatchQueue.main.async { [weak self] in
+            self?.pendingMessageTimer?.invalidate()
+            self?.pendingMessageTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { _ in
+                self?.handlePendingMessageTimeout()
             }
         }
-        // If ID is "-1", don't track for ACK - just send and forget
     }
 
     private func handlePendingMessageTimeout() {
@@ -1556,18 +1551,6 @@ class MentraLive: NSObject, SGCManager {
 
         let json: [String: Any] = [
             "type": "query_gallery_status",
-        ]
-
-        sendJson(json, wakeUp: true)
-    }
-
-    func sendGalleryModeActive(_ active: Bool) {
-        Bridge.log("LiveManager: 📸 Sending gallery mode active to glasses: \(active)")
-
-        let json: [String: Any] = [
-            "type": "save_in_gallery_mode",
-            "active": active,
-            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
         ]
 
         sendJson(json, wakeUp: true)
@@ -2014,12 +1997,9 @@ class MentraLive: NSObject, SGCManager {
         do {
             var json = jsonOriginal
             var messageId: Int64 = -1
-            var trackingId = "-1" // -1 means no ACK tracking needed
-
             if isNewVersion, requireAck {
                 messageId = Int64(globalMessageId)
                 json["mId"] = globalMessageId
-                trackingId = String(globalMessageId)
                 globalMessageId += 1
             }
 
@@ -2050,11 +2030,7 @@ class MentraLive: NSObject, SGCManager {
                             let packedData = packJson(chunkStr, wakeUp: wakeUp && index == 0) ?? Data() // Only wakeup on first chunk
 
                             // Queue the chunk for sending
-                            // Only track ACK for the final chunk (which has the mId)
-                            // All other chunks get "-1" (no ACK tracking)
-                            let isFinalChunk = (index == chunks.count - 1)
-                            let chunkTrackingId = (requireAck && isFinalChunk) ? trackingId : "-1"
-                            queueSend(packedData, id: chunkTrackingId)
+                            queueSend(packedData, id: "chunk_\(index)_\(String(globalMessageId - 1))")
 
                             // Add small delay between chunks to avoid overwhelming the connection
                             if index < chunks.count - 1 {
@@ -2068,7 +2044,7 @@ class MentraLive: NSObject, SGCManager {
                     // Normal single message transmission
                     Bridge.log("Sending data to glasses: \(jsonString)")
                     let packedData = packJson(jsonString, wakeUp: wakeUp) ?? Data()
-                    queueSend(packedData, id: trackingId)
+                    queueSend(packedData, id: String(globalMessageId - 1))
                 }
             }
         } catch {
@@ -2353,25 +2329,16 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("💓 Starting heartbeat mechanism")
         heartbeatCounter = 0
 
-        // Ensure timer is created on main thread (required for RunLoop)
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.heartbeatTimer?.invalidate()
-            self.heartbeatTimer = Timer.scheduledTimer(withTimeInterval: self.HEARTBEAT_INTERVAL_MS, repeats: true) { [weak self] _ in
-                self?.sendHeartbeat()
-            }
+        heartbeatTimer?.invalidate()
+        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: HEARTBEAT_INTERVAL_MS, repeats: true) { [weak self] _ in
+            self?.sendHeartbeat()
         }
     }
 
     private func stopHeartbeat() {
         Bridge.log("💓 Stopping heartbeat mechanism")
-
-        // Ensure timer is stopped on main thread (same thread it was created on)
-        DispatchQueue.main.async { [weak self] in
-            self?.heartbeatTimer?.invalidate()
-            self?.heartbeatTimer = nil
-        }
-
+        heartbeatTimer?.invalidate()
+        heartbeatTimer = nil
         heartbeatCounter = 0
     }
 
@@ -2381,20 +2348,11 @@ class MentraLive: NSObject, SGCManager {
             return
         }
 
-        // Send ping message to glasses hardware (no ACK needed for heartbeats)
-        let pingJson: [String: Any] = ["type": "ping"]
-        sendJson(pingJson, requireAck: false)
-
-        // Send heartbeat to AsgClientService for connection monitoring
-        let serviceHeartbeat: [String: Any] = [
-            "type": "service_heartbeat",
-            "timestamp": Int64(Date().timeIntervalSince1970 * 1000), // milliseconds
-            "heartbeat_counter": heartbeatCounter,
-        ]
-        sendJson(serviceHeartbeat, requireAck: false)
+        let json: [String: Any] = ["type": "ping"]
+        sendJson(json)
 
         heartbeatCounter += 1
-        Bridge.log("💓 Heartbeat #\(heartbeatCounter) sent (BLE ping + service heartbeat)")
+        Bridge.log("💓 Heartbeat #\(heartbeatCounter) sent")
 
         // Request battery status periodically
         if heartbeatCounter % BATTERY_REQUEST_EVERY_N_HEARTBEATS == 0 {
@@ -2867,9 +2825,6 @@ extension MentraLive {
         // Send button video recording settings
         sendButtonVideoRecordingSettings()
 
-        // Send button max recording time
-        sendButtonMaxRecordingTime(MentraManager.shared.buttonMaxRecordingTimeMinutes)
-
         // Send button photo settings
         sendButtonPhotoSettings()
 
@@ -2901,23 +2856,6 @@ extension MentraLive {
                 "height": finalHeight,
                 "fps": finalFps,
             ],
-        ]
-        sendJson(json, wakeUp: true)
-    }
-
-    func sendButtonMaxRecordingTime(_ minutes: Int) {
-        let maxTime = minutes
-
-        Bridge.log("Sending button max recording time: \(maxTime) minutes")
-
-        guard connectionState == .connected else {
-            Bridge.log("Cannot send button max recording time - not connected")
-            return
-        }
-
-        let json: [String: Any] = [
-            "type": "button_max_recording_time",
-            "minutes": maxTime,
         ]
         sendJson(json, wakeUp: true)
     }

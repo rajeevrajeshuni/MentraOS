@@ -6,6 +6,7 @@ import express, { Request, Response } from "express";
 import { logger } from "../services/logging/pino-logger";
 import { validateGlassesAuth } from "../middleware/glasses-auth.middleware";
 import UserSession from "../services/session/UserSession";
+import subscriptionService from "../services/session/subscription.service";
 import { StreamType } from "@mentra/sdk";
 import photoRequestService from "../services/core/photo-request.service";
 
@@ -34,8 +35,8 @@ router.post(
       // Check if any Apps are subscribed to button events
       const subscribedApps = userSession
         ? userSession.subscriptionManager.getSubscribedApps(
-            StreamType.BUTTON_PRESS,
-          )
+          StreamType.BUTTON_PRESS,
+        )
         : [];
 
       if (subscribedApps.length === 0) {
@@ -63,7 +64,7 @@ router.post(
         });
       }
     } catch (error) {
-      logger.error(error, "Error handling button press:");
+      logger.error("Error handling button press:", error);
       res.status(500).json({ error: "Failed to process button press" });
     }
   },
@@ -95,7 +96,7 @@ router.get(
         action: "take_photo",
       });
     } catch (error) {
-      logger.error(error, "Error checking system photo request:");
+      logger.error("Error checking system photo request:", error);
       res.status(500).json({ error: "Failed to check system photo request" });
     }
   },

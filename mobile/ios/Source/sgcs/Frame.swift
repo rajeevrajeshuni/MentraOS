@@ -73,8 +73,6 @@ struct FrameCommand {
 
     func sendButtonVideoRecordingSettings() {}
 
-    func sendButtonMaxRecordingTime(_: Int) {}
-
     func sendButtonCameraLedSetting() {}
 
     func exit() {}
@@ -86,8 +84,6 @@ struct FrameCommand {
     func sendHotspotState(_: Bool) {}
 
     func queryGalleryStatus() {}
-
-    func sendGalleryModeActive(_: Bool) {}
 
     func showDashboard() {}
 

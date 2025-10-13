@@ -27,10 +27,7 @@ export async function appPkgHealthCheck(req: Request, res: Response) {
       timestamp: new Date(),
     });
   } catch (err) {
-    logger.error(
-      err as Error,
-      `Error in appPkgHealthCheck for ${packageName}:`,
-    );
+    logger.error(`Error in appPkgHealthCheck for ${packageName}:`, err);
     res.json({
       packageName,
       success: false,
@@ -92,7 +89,7 @@ async function appsStatus(req: Request, res: Response) {
       ...healthStatus,
     });
   } catch (error) {
-    logger.error(error as Error, "Error fetching app status:");
+    logger.error("Error fetching app status:", error);
     res.status(500).json({
       error: true,
       message:
@@ -114,7 +111,7 @@ async function latestStatus(req: Request, res: Response) {
       await AppUptimeService.getLatestStatusesForPackages(packageNames);
     res.json({ success: true, data: result });
   } catch (error) {
-    logger.error(error as Error, "Error fetching latest statuses:");
+    logger.error("Error fetching latest statuses:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to fetch latest statuses" });
@@ -130,7 +127,7 @@ async function getAppUptimeDays(req: Request, res: Response) {
     const result = await AppUptimeService.collectAllAppBatchStatus(month, year);
     res.json(result);
   } catch (error) {
-    logger.error(error as Error, "Error fetching app uptime days:");
+    logger.error("Error fetching app uptime days:", error);
     res.status(500).json({
       error: true,
       message:
@@ -149,7 +146,7 @@ async function healthCheck(req: Request, res: Response) {
       uptime: process.uptime(),
     });
   } catch (error) {
-    logger.error(error as Error, "Health check failed:");
+    logger.error("Health check failed:", error);
     res.status(500).json({
       status: "unhealthy",
       service: "app-uptime-service",

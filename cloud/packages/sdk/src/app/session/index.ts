@@ -70,7 +70,6 @@ import {
   isStreamStatusCheckResponse,
 } from "../../types/messages/cloud-to-app";
 import { SimpleStorage } from "./modules/simple-storage";
-import { readNotificationWarnLog } from "../../utils/permissions-utils";
 
 /**
  * ⚙️ Configuration options for App Session
@@ -277,8 +276,6 @@ export class AppSession {
     this.events = new EventManager(
       this.subscribe.bind(this),
       this.unsubscribe.bind(this),
-      this.config.packageName,
-      this.getHttpsServerUrl() || "",
     );
     this.layouts = new LayoutManager(config.packageName, this.send.bind(this));
 
@@ -445,11 +442,6 @@ export class AppSession {
    * @deprecated Use session.events.onPhoneNotifications() instead
    */
   onPhoneNotifications(handler: (data: PhoneNotification) => void): () => void {
-    readNotificationWarnLog(
-      this.getHttpsServerUrl() || "",
-      this.getPackageName(),
-      "onPhoneNotifications",
-    );
     return this.events.onPhoneNotifications(handler);
   }
 

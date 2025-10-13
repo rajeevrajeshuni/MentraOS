@@ -3,6 +3,10 @@ const en = {
     glassesNeededForGlassesMic: "Connect glasses to enable",
     systemMic: "System Microphone",
     glassesMic: "Glasses Microphone",
+    cameraButtonAction: "Camera Button Action",
+    takeGalleryPhoto: "Take Gallery Photo",
+    useInApps: "Use in Apps",
+    both: "Both",
   },
   screenSettings: {
     title: "Display Position Settings",

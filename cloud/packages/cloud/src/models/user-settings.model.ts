@@ -98,13 +98,10 @@ UserSettingsSchema.methods.updateSettings = async function (
   this.lastUpdated = new Date();
   await this.save();
 
-  logger.debug(
-    {
-      userId: this.email,
-      updatedKeys: Object.keys(newSettings),
-    },
-    `Settings updated for user ${this.email}`,
-  );
+  logger.info(`Settings updated for user ${this.email}`, {
+    email: this.email,
+    updatedKeys: Object.keys(newSettings),
+  });
 };
 
 UserSettingsSchema.methods.getSettings = function (
@@ -233,7 +230,7 @@ export const UserSettings =
       }
       logger.info("UserSettings migration completed");
     } catch (err) {
-      logger.error(err, "UserSettings migration error");
+      logger.error({ err }, "UserSettings migration error");
     }
   };
 
@@ -243,3 +240,4 @@ export const UserSettings =
     mongoose.connection.on("connected", () => setTimeout(run, 0));
   }
 })();
+

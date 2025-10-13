@@ -134,7 +134,6 @@ export default function EditApp() {
     useState<ImportConfigData | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const [sameValueWarning , setSameValueWarning] = useState(false);
 
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -417,8 +416,6 @@ export default function EditApp() {
 
     try {
       if (!packageName) throw new Error("Package name is missing");
-      if (!currentOrg) throw new Error("No organization selected");
-      if (sameValueWarning) throw new Error("Please resolve duplicate option values in settings before saving.");
 
       // Normalize URLs before submission
       const normalizedData = {
@@ -1345,8 +1342,6 @@ export default function EditApp() {
                   <SettingsEditor
                     settings={formData.settings || []}
                     onChange={handleSettingsChange}
-                    setSameValueWarning={setSameValueWarning}
-                    toast = {toast}
                   />
                 </div>
 

@@ -60,7 +60,6 @@ protocol SGCManager {
     func sendButtonPhotoSettings()
     func sendButtonModeSetting()
     func sendButtonVideoRecordingSettings()
-    func sendButtonMaxRecordingTime(_ minutes: Int)
     func sendButtonCameraLedSetting()
 
     // MARK: - Display Control
@@ -97,7 +96,6 @@ protocol SGCManager {
     // MARK: - Gallery
 
     func queryGalleryStatus()
-    func sendGalleryModeActive(_ active: Bool)
 }
 
 extension SGCManager {
