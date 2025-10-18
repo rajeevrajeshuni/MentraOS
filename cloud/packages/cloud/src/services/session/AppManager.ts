@@ -1308,6 +1308,23 @@ export class AppManager {
           `Reconnection Grace period expired for ${packageName}, checking connection state`,
         );
 
+        // Check if glasses WebSocket is still connected before attempting resurrection
+        const glassesWsState = this.userSession.websocket?.readyState;
+        const glassesWsOpen = glassesWsState === 1; // WebSocket.OPEN
+
+        if (!glassesWsOpen) {
+          logger.info(
+            { packageName, glassesWsState },
+            `Glasses WebSocket is not open (state: ${glassesWsState}), skipping app resurrection for ${packageName}`,
+          );
+          this.setAppConnectionState(
+            packageName,
+            AppConnectionState.DISCONNECTED,
+          );
+          this.userSession._reconnectionTimers?.delete(packageName);
+          return;
+        }
+
         // If not reconnected, move to disconnected state and attempt resurrection.
         if (!this.userSession.appWebsockets.has(packageName)) {
           this.logger.debug(
@@ -1430,6 +1447,22 @@ export class AppManager {
 
           // Fall through to resurrection logic below
         }
+      }
+
+      // Check if glasses WebSocket is still connected before attempting resurrection
+      const glassesWsState = this.userSession.websocket?.readyState;
+      const glassesWsOpen = glassesWsState === 1; // WebSocket.OPEN
+
+      if (!glassesWsOpen) {
+        this.logger.warn(
+          { packageName, glassesWsState },
+          `[AppManager:sendMessageToApp]: Glasses WebSocket is not open (state: ${glassesWsState}), skipping app resurrection for ${packageName}`,
+        );
+        return {
+          sent: false,
+          resurrectionTriggered: false,
+          error: "Glasses WebSocket not connected",
+        };
       }
 
       // If we reach here, it means the connection is not available, let's call handleAppConnectionClosed
