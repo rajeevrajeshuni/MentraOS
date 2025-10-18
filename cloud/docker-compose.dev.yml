@@ -22,6 +22,7 @@ services:
       - CONTAINER_ENVIRONMENT=true
       - CLOUD_HOST_NAME=cloud
       - LIVEKIT_GRPC_SOCKET=/var/run/livekit/bridge.sock
+      - LIVEKIT_PCM_ENDIAN=off
     env_file:
       - .env
     volumes:
