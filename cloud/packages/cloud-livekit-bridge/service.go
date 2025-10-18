@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Mentra-Community/MentraOS/cloud/packages/cloud-livekit-bridge/logger"
 	pb "github.com/Mentra-Community/MentraOS/cloud/packages/cloud-livekit-bridge/proto"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"google.golang.org/grpc/codes"
@@ -34,13 +35,15 @@ type LiveKitBridgeService struct {
 
 	sessions sync.Map // userId -> *RoomSession
 	config   *Config
+	bsLogger *logger.BetterStackLogger
 	mu       sync.RWMutex
 }
 
 // NewLiveKitBridgeService creates a new service instance
-func NewLiveKitBridgeService(config *Config) *LiveKitBridgeService {
+func NewLiveKitBridgeService(config *Config, bsLogger *logger.BetterStackLogger) *LiveKitBridgeService {
 	return &LiveKitBridgeService{
-		config: config,
+		config:   config,
+		bsLogger: bsLogger,
 	}
 }
 
@@ -50,9 +53,17 @@ func (s *LiveKitBridgeService) JoinRoom(
 	req *pb.JoinRoomRequest,
 ) (*pb.JoinRoomResponse, error) {
 	log.Printf("JoinRoom request: userId=%s, room=%s", req.UserId, req.RoomName)
+	s.bsLogger.LogInfo("JoinRoom request received", map[string]interface{}{
+		"user_id":     req.UserId,
+		"room_name":   req.RoomName,
+		"livekit_url": req.LivekitUrl,
+	})
 
 	// Check if session already exists
 	if _, exists := s.sessions.Load(req.UserId); exists {
+		s.bsLogger.LogWarn("Session already exists for user", map[string]interface{}{
+			"user_id": req.UserId,
+		})
 		return &pb.JoinRoomResponse{
 			Success: false,
 			Error:   "session already exists for this user",
@@ -114,6 +125,10 @@ func (s *LiveKitBridgeService) JoinRoom(
 		},
 		OnDisconnected: func() {
 			log.Printf("Disconnected from LiveKit room: %s", req.RoomName)
+			s.bsLogger.LogWarn("Disconnected from LiveKit room", map[string]interface{}{
+				"user_id":   req.UserId,
+				"room_name": req.RoomName,
+			})
 		},
 	}
 
@@ -125,6 +140,11 @@ func (s *LiveKitBridgeService) JoinRoom(
 		lksdk.WithAutoSubscribe(false),
 	)
 	if err != nil {
+		s.bsLogger.LogError("Failed to connect to LiveKit room", err, map[string]interface{}{
+			"user_id":     req.UserId,
+			"room_name":   req.RoomName,
+			"livekit_url": req.LivekitUrl,
+		})
 		return &pb.JoinRoomResponse{
 			Success: false,
 			Error:   fmt.Sprintf("failed to connect to room: %v", err),
@@ -142,6 +162,13 @@ func (s *LiveKitBridgeService) JoinRoom(
 	log.Printf("Successfully joined room: userId=%s, participantId=%s",
 		req.UserId, room.LocalParticipant.Identity())
 
+	s.bsLogger.LogInfo("Successfully joined LiveKit room", map[string]interface{}{
+		"user_id":           req.UserId,
+		"room_name":         req.RoomName,
+		"participant_id":    string(room.LocalParticipant.Identity()),
+		"participant_count": len(room.GetRemoteParticipants()) + 1,
+	})
+
 	return &pb.JoinRoomResponse{
 		Success:          true,
 		ParticipantId:    string(room.LocalParticipant.Identity()),
@@ -155,6 +182,9 @@ func (s *LiveKitBridgeService) LeaveRoom(
 	req *pb.LeaveRoomRequest,
 ) (*pb.LeaveRoomResponse, error) {
 	log.Printf("LeaveRoom request: userId=%s", req.UserId)
+	s.bsLogger.LogInfo("LeaveRoom request received", map[string]interface{}{
+		"user_id": req.UserId,
+	})
 
 	sessionVal, ok := s.sessions.Load(req.UserId)
 	if !ok {
