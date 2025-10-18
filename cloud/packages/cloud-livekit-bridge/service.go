@@ -110,6 +110,13 @@ func (s *LiveKitBridgeService) JoinRoom(
 				case session.audioFromLiveKit <- pcmData:
 					// Log periodically to show audio is flowing
 					if receivedPackets%100 == 0 {
+						s.bsLogger.LogDebug("Audio flowing from LiveKit", map[string]interface{}{
+							"user_id":     req.UserId,
+							"received":    receivedPackets,
+							"dropped":     droppedPackets,
+							"channel_len": len(session.audioFromLiveKit),
+							"room_name":   req.RoomName,
+						})
 						log.Printf("Audio flowing for %s: received=%d, dropped=%d, channelLen=%d",
 							req.UserId, receivedPackets, droppedPackets, len(session.audioFromLiveKit))
 					}
@@ -117,6 +124,12 @@ func (s *LiveKitBridgeService) JoinRoom(
 					// Drop frame if channel full (backpressure)
 					droppedPackets++
 					if droppedPackets%50 == 0 {
+						s.bsLogger.LogWarn("Dropping audio frames", map[string]interface{}{
+							"user_id":       req.UserId,
+							"total_dropped": droppedPackets,
+							"channel_full":  len(session.audioFromLiveKit),
+							"room_name":     req.RoomName,
+						})
 						log.Printf("Dropping audio frames for %s: total_dropped=%d, channel_full=%d",
 							req.UserId, droppedPackets, len(session.audioFromLiveKit))
 					}
@@ -124,11 +137,11 @@ func (s *LiveKitBridgeService) JoinRoom(
 			},
 		},
 		OnDisconnected: func() {
-			log.Printf("Disconnected from LiveKit room: %s", req.RoomName)
 			s.bsLogger.LogWarn("Disconnected from LiveKit room", map[string]interface{}{
 				"user_id":   req.UserId,
 				"room_name": req.RoomName,
 			})
+			log.Printf("Disconnected from LiveKit room: %s", req.RoomName)
 		},
 	}
 
@@ -298,10 +311,18 @@ func (s *LiveKitBridgeService) StreamAudio(
 					}
 					sentPackets++
 					if sentPackets%100 == 0 {
+						s.bsLogger.LogDebug("Sent audio chunks to TypeScript", map[string]interface{}{
+							"user_id":     userId,
+							"sent":        sentPackets,
+							"channel_len": len(session.audioFromLiveKit),
+						})
 						log.Printf("Sent %d audio chunks to TypeScript for user %s (channelLen=%d)",
 							sentPackets, userId, len(session.audioFromLiveKit))
 					}
 				case <-time.After(2 * time.Second):
+					s.bsLogger.LogError("StreamAudio send timeout", fmt.Errorf("timeout after 2s"), map[string]interface{}{
+						"user_id": userId,
+					})
 					log.Printf("StreamAudio send timeout for %s after 2s, client may be stuck", userId)
 					errChan <- fmt.Errorf("send timeout after 2s")
 					return
@@ -318,10 +339,16 @@ func (s *LiveKitBridgeService) StreamAudio(
 	// Wait for error or cancellation
 	select {
 	case err := <-errChan:
+		s.bsLogger.LogError("StreamAudio error", err, map[string]interface{}{
+			"user_id": userId,
+		})
 		log.Printf("StreamAudio error for userId=%s: %v", userId, err)
 
 		// CRITICAL: Clean up session on stream error
 		// This prevents zombie sessions and "channel full" errors after reconnection issues
+		s.bsLogger.LogWarn("Cleaning up session due to stream error", map[string]interface{}{
+			"user_id": userId,
+		})
 		log.Printf("Cleaning up session for %s due to stream error", userId)
 		session.Close()
 		s.sessions.Delete(userId)
