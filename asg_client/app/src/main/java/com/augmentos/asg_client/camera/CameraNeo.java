@@ -699,19 +699,14 @@ public class CameraNeo extends LifecycleService {
                         sizeChanged = !pendingRequestedSize.equals(nextRequest.size);
                     }
                     cancelKeepAliveTimer();
+                    // Process the queued request
+                    pendingPhotoPath = nextRequest.filePath;
+                    pendingRequestedSize = nextRequest.size;
                     if (sizeChanged) {
                         Log.d(TAG, "Photo size changed, reopening camera");
-                        // Save the request details to the class members
-                        // so the session callback can find them after the camera reopens.
-                        this.pendingPhotoPath = nextRequest.filePath;
-                        this.pendingRequestedSize = nextRequest.size;
                         closeCamera();
                         openCameraInternal(nextRequest.filePath, false);
                     } else {
-                        // Process the queued request
-                        pendingPhotoPath = nextRequest.filePath;
-                        pendingRequestedSize = nextRequest.size;
-
                         // Update LED state if this request needs LED
                         if (nextRequest.enableLed) {
                             pendingLedEnabled = true;
