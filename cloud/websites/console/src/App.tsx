@@ -105,6 +105,8 @@ const AppShell: React.FC = () => {
 
   const fetchApps = useAppStore((s) => s.fetchApps);
 
+  const authWithConsoleParam = <AuthWithParam client_id="console" />;
+
   // Effect A: run once when auth is ready to bootstrap account and orgs
   useEffect(() => {
     if (tokenReady && isAuthenticated) {
@@ -152,12 +154,12 @@ const AppShell: React.FC = () => {
         <Route path="/" element={<LandingPage />} />
 
         {/* Login or Signup */}
-        <Route path="/login" element={<AuthWithParam />} />
-        <Route path="/signup" element={<AuthWithParam />} />
-        <Route path="/signin" element={<AuthWithParam />} />
+        <Route path="/login" element={authWithConsoleParam} />
+        <Route path="/signup" element={authWithConsoleParam} />
+        <Route path="/signin" element={authWithConsoleParam} />
 
         {/* Organization Invite */}
-        <Route path="/invite/accept" element={<AuthWithParam />} />
+        <Route path="/invite/accept" element={authWithConsoleParam} />
 
         {/* Dashboard Routes - No auth for now */}
         <Route

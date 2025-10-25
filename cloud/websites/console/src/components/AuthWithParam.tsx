@@ -1,13 +1,19 @@
 import React from "react";
 import LoginOrSignup from "../pages/AuthPage";
+import {
+  useLocation,
+  useSearchParams,
+  Navigate,
+} from "react-router-dom";
 
 const paramName = "client_id"
-const paramValue = "console"
 
 function AddClientQueryParam({
   children,
+  client_id,
 }: {
   children: React.ReactNode;
+  client_id: string;
 }) {
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -16,7 +22,7 @@ function AddClientQueryParam({
   if (!searchParams.has(paramName)) {
     // Create new search params, preserving any existing ones
     const newSearchParams = new URLSearchParams(searchParams.toString());
-    newSearchParams.set(paramName, paramValue);
+    newSearchParams.set(paramName, client_id);
 
     // Redirect to the same page but with the new param
     return (
@@ -34,9 +40,13 @@ function AddClientQueryParam({
   return <>{children}</>;
 }
 
-export const AuthWithParam: React.FC = () => {
+interface AuthWithParamProps {
+  client_id: string;
+}
+
+export const AuthWithParam = ({ client_id }: AuthWithParamProps) => {
   return (
-    <AddClientQueryParam>
+    <AddClientQueryParam client_id={client_id}>
       <LoginOrSignup />
     </AddClientQueryParam>
   );
