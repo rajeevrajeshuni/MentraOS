@@ -10,7 +10,7 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import LandingPage from "./pages/LandingPage";
 import DashboardHome from "./pages/DashboardHome";
 
-import LoginOrSignup from "./pages/AuthPage";
+import AuthWithParam from "./components/AuthWithParam";
 import AppList from "./pages/AppList";
 import CreateApp from "./pages/CreateApp";
 import EditApp from "./pages/EditApp";
@@ -152,12 +152,12 @@ const AppShell: React.FC = () => {
         <Route path="/" element={<LandingPage />} />
 
         {/* Login or Signup */}
-        <Route path="/login" element={<LoginOrSignup />} />
-        <Route path="/signup" element={<LoginOrSignup />} />
-        <Route path="/signin" element={<LoginOrSignup />} />
+        <Route path="/login" element={<AuthWithParam />} />
+        <Route path="/signup" element={<AuthWithParam />} />
+        <Route path="/signin" element={<AuthWithParam />} />
 
         {/* Organization Invite */}
-        <Route path="/invite/accept" element={<LoginOrSignup />} />
+        <Route path="/invite/accept" element={<AuthWithParam />} />
 
         {/* Dashboard Routes - No auth for now */}
         <Route

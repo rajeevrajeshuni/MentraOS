@@ -26,6 +26,7 @@ const AuthFlowPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState("Initializing...");
 
+  //Ques: What do we mean by package here?
   const packageName = searchParams.get("packagename");
 
   useEffect(() => {
@@ -66,7 +67,9 @@ const AuthFlowPage: React.FC = () => {
       setProgress("Fetching app details...");
 
       // Get app details
+      //Ques: Is package name one-one linked to an app?
       const app = await api.oauth.getAppDetails(packageName);
+
       setAppDetails(app);
 
       if (!app.webviewURL) {
@@ -104,6 +107,8 @@ const AuthFlowPage: React.FC = () => {
 
       setProgress("Redirecting to app...");
 
+
+      //Ques: Does this webViewURL contain the app details?
       // Build redirect URL with token
       const redirectUrl = new URL(appDetails.webviewURL);
 
