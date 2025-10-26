@@ -5,7 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, AuthError} from "@supabase/supabase-js";
 import { supabase } from "../utils/supabase"; // Adjust this path as needed
 import axios from "axios";
 
@@ -30,17 +30,19 @@ export interface AuthContextType {
   coreToken: string | null;
   tokenReady: boolean;
   isWebViewAuth: boolean;
-  //TODO: Need to add data as return here for SignIn.
   signIn: (
     email: string,
     password: string,
-    redirectUrl?: string | null,
-  ) => Promise<{ error: null | unknown }>;
+  ) => Promise<{
+    data: { session: Session | null; user: User | null } | null;
+    error: AuthError | unknown | null;
+  }>;
+
   signUp: (
     email: string,
     password: string,
-    redirectUrl?: string | null,
-  ) => Promise<{ error: null | unknown }>;
+    redirectUrl: string,
+  ) => Promise<{ error: AuthError | unknown | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -192,7 +194,6 @@ export function AuthProvider({
   const signIn = async (
     email: string,
     password: string,
-    redirectUrl?: string | null,
   ) => {
     try {
       console.log("Signing in with email/password");
@@ -212,26 +213,18 @@ export function AuthProvider({
         }
 
         await exchangeForCoreToken(data.session.access_token);
-        // Will redirect to the given url when supplied.
-        if (redirectUrl) {
-          setTimeout(() => {
-            console.log(`Redirecting to ${redirectUrl} after successful sign in`);
-            window.location.href = `${window.location.origin}${redirectUrl}`;
-          }, 500);
-        }
       }
-
-      return { error };
+      return { data, error };
     } catch (error) {
       console.error("Error during sign in:", error);
-      return { error };
+      return { data: null, error };
     }
   };
 
   const signUp = async (
     email: string,
     password: string,
-    redirectUrl?: string | null,
+    redirectUrl: string,
   ) => {
     try {
       console.log("Signing up with email/password");

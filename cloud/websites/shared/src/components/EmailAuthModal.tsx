@@ -10,17 +10,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from "./ui/dialog";
-import { supabase } from "../utils/supabase";
 import { useAuth } from '../hooks/useAuth';
 
 interface EmailAuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  redirectUrl: string;
 }
 
 const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
   open,
   onOpenChange,
+  redirectUrl,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +41,7 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
     try {
       if (isSignUp) {
         // Handle sign up
-        const { error: signUpError } = await signUp(email, password);
+        const { error: signUpError } = await signUp(email, password, redirectUrl);
 
         if (signUpError) {
           setError(signUpError.toString());
@@ -55,13 +56,12 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
         if (signInError) {
           setError(signInError.toString());
         } else if (data?.session) {
-          // Successfully logged in, close the modal and let AuthContext handle redirect
+          // Successfully logged in, close the modal and let Login Page handle redirect
           setMessage("Login successful! Redirecting...");
-          //TODO: Do we need to change anything here to standardize?
           // Close the modal after a brief delay
           setTimeout(() => {
             onOpenChange(false);
-            // The AuthContext onAuthStateChange handler will handle the redirect
+            // The LoginPage will handle the redirect
           }, 500);
         }
       }

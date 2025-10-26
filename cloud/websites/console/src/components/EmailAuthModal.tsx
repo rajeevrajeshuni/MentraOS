@@ -37,7 +37,7 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({ open, onOpenChange }) =
     try {
       if (isSignUp) {
         // Handle sign up
-        const { error: signUpError } = await signUp(email, password);
+        const { error: signUpError } = await signUp(email, password,"/dashboard");
         if (signUpError) {
           setError(signUpError.toString());
         } else {
