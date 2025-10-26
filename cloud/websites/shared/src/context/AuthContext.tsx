@@ -1,6 +1,5 @@
 import React, {
   createContext,
-  useContext,
   useEffect,
   useState,
   useRef,
@@ -22,9 +21,6 @@ declare global {
   }
 }
 
-/**
- * The shape of the Authentication context.
- */
 export interface AuthContextType {
   session: Session | null;
   user: User | null;

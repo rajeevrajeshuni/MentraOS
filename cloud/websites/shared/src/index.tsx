@@ -4,3 +4,9 @@ import React from 'react';
 export const SharedButton: React.FC = () => {
   return <button>Click Me (Shared)</button>;
 };
+
+// Export useAuth hook
+export { useAuth } from './hooks/useAuth';
+
+// Export EmailModal component
+export { default as EmailAuthModal } from './components/EmailAuthModal';
