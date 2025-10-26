@@ -15,13 +15,13 @@ import { useAuth } from '../hooks/useAuth';
 interface EmailAuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  redirectUrl: string;
+  redirectPath: string;
 }
 
 const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
   open,
   onOpenChange,
-  redirectUrl,
+  redirectPath,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +41,7 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
     try {
       if (isSignUp) {
         // Handle sign up
-        const { error: signUpError } = await signUp(email, password, redirectUrl);
+        const { error: signUpError } = await signUp(email, password, redirectPath);
 
         if (signUpError) {
           setError(signUpError.toString());

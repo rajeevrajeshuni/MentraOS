@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@mentra/shared';
 import { useAuth } from '@mentra/shared';
 import { Button } from '../components/ui/button';
-import EmailAuthModal from '../components/EmailAuthModal';
+import { EmailAuthModal } from '@mentra/shared';
 
 const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const { isAuthenticated, isLoading, refreshUser, tokenReady } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Get the redirect path from location state or default to home
   const from = (location.state)?.from?.pathname || (location.state)?.returnTo || '/';
@@ -117,6 +116,7 @@ const LoginPage: React.FC = () => {
           <EmailAuthModal
             open={isEmailModalOpen}
             onOpenChange={setIsEmailModalOpen}
+            redirectPath='/'
           />
         </div>
       </main>

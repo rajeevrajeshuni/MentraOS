@@ -6,7 +6,7 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@mentra/shared';
 import { useAuth } from '@mentra/shared';
 import { Button } from "@/components/ui/button";
-import EmailAuthModal from '../components/EmailAuthModal';
+import { EmailAuthModal } from '@mentra/shared';
 import api from '../services/api.service';
 import { toast } from 'sonner';
 
@@ -156,6 +156,7 @@ const AuthPage: React.FC = () => {
       <EmailAuthModal
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
+        redirectPath="/dashboard"
       />
     </div>
   );

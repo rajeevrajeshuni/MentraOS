@@ -41,7 +41,7 @@ export interface AuthContextType {
   signUp: (
     email: string,
     password: string,
-    redirectUrl: string,
+    redirectPath: string,
   ) => Promise<{ error: AuthError | unknown | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -224,7 +224,7 @@ export function AuthProvider({
   const signUp = async (
     email: string,
     password: string,
-    redirectUrl: string,
+    redirectPath: string,
   ) => {
     try {
       console.log("Signing up with email/password");
@@ -232,7 +232,7 @@ export function AuthProvider({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}${redirectUrl}`,
+          emailRedirectTo: `${window.location.origin}${redirectPath}`,
         },
       });
 
@@ -247,10 +247,10 @@ export function AuthProvider({
         }
 
         await exchangeForCoreToken(data.session.access_token);
-        if (redirectUrl) {
+        if (redirectPath) {
           setTimeout(() => {
-            console.log(`Redirecting to ${redirectUrl} after successful sign up`);
-            window.location.href = `${window.location.origin}${redirectUrl}`;
+            console.log(`Redirecting to ${redirectPath} after successful sign up`);
+            window.location.href = `${window.location.origin}${redirectPath}`;
           }, 500);
         }
       } else if (!error) {

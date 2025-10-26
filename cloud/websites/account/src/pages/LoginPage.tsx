@@ -139,7 +139,7 @@ const LoginPage: React.FC = () => {
           <EmailAuthModal
             open={isEmailModalOpen}
             onOpenChange={setIsEmailModalOpen}
-            redirectUrl={window.location.origin}
+            redirectPath="/"
           />
         </div>
       </main>
