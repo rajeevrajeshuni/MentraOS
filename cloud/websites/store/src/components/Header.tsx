@@ -6,7 +6,6 @@ import { useTheme } from '../hooks/useTheme';
 import { useIsDesktop, useIsMobile } from '../hooks/useMediaQuery';
 import { useSearch } from '../contexts/SearchContext';
 import { Button } from './ui/button';
-import { Baseline } from 'lucide-react';
 import GetMentraOSButton from './GetMentraOSButton';
 import SearchBar from './SearchBar';
 
@@ -16,7 +15,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
-  const { isAuthenticated, signOut, user } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const { isWebView } = usePlatform();
   const { theme } = useTheme();
   const { searchQuery, setSearchQuery } = useSearch();

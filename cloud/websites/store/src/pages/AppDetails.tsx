@@ -2,18 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
-  Download,
   X,
-  ExternalLink,
   Calendar,
-  Clock,
   Info,
-  Star,
-  Package,
-  Building,
-  Globe,
-  Mail,
-  FileText,
   Mic,
   Camera,
   MapPin,
@@ -35,7 +26,6 @@ import { toast } from "sonner";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import { Button } from "@/components/ui/button";
 import Header from "../components/Header";
-import AppPermissions from "../components/AppPermissions";
 import GetMentraOSButton from "../components/GetMentraOSButton";
 
 // Hardware icon mapping
