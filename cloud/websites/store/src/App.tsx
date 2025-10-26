@@ -1,6 +1,6 @@
 import { Suspense, lazy, type ReactNode, type FC } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './hooks/useAuth';
+import { AuthProvider, useAuth } from '@mentra/shared';
 import { PlatformProvider } from './hooks/usePlatform';
 import { SearchProvider } from './contexts/SearchContext';
 import { Toaster } from 'sonner';
@@ -56,7 +56,7 @@ const AppRoutes: FC = () => {
 const App: FC = () => {
   return (
     <PlatformProvider>
-      <AuthProvider>
+      <AuthProvider enableWebViewAuth={true}>
         <SearchProvider>
           <BrowserRouter>
             <AppRoutes />

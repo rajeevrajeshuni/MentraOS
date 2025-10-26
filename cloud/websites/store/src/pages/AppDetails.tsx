@@ -25,7 +25,7 @@ import {
   CircleDot,
   Lightbulb,
 } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@mentra/shared";
 import { useTheme } from "../hooks/useTheme";
 import { useIsDesktop } from "../hooks/useMediaQuery";
 import { usePlatform } from "../hooks/usePlatform";

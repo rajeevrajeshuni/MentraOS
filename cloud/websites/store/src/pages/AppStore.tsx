@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { X, Building } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@mentra/shared";
 import { useTheme } from "../hooks/useTheme";
 import { usePlatform } from "../hooks/usePlatform";
 import { useSearch } from "../contexts/SearchContext";

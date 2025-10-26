@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@mentra/shared';
 import { usePlatform } from '../hooks/usePlatform';
 import { useTheme } from '../hooks/useTheme';
 import { useIsDesktop, useIsMobile } from '../hooks/useMediaQuery';
