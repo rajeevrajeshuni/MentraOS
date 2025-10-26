@@ -6,14 +6,14 @@ export const SharedButton: React.FC = () => {
 };
 
 // Export useAuth hook
-export { useAuth } from './hooks/useAuth';
+export { useAuth } from './auth/hooks/useAuth';
 
 // Export AuthProvider
 
-export { AuthProvider } from './context/AuthContext'
+export { AuthProvider } from './auth/context/AuthContext'
 
 // Export EmailModal component
-export { default as EmailAuthModal } from './components/EmailAuthModal';
+export { default as EmailAuthModal } from './auth/components/EmailAuthModal';
 
 //Export supabase object
-export {supabase} from './utils/supabase';
+export {supabase} from './auth/utils/supabase';
