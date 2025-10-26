@@ -1,7 +1,7 @@
 // src/hooks/useAuth.tsx
 import { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../utils/supabase';
+import { supabase } from '@mentra/shared';
 import axios from 'axios';
 import { setAuthToken } from '../api';
 

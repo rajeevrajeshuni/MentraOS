@@ -1,26 +1,43 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@mentra/shared';
-import Header from '../components/Header';
+import { useAuth } from '@mentra/shared';
 import { Button } from '../components/ui/button';
 import EmailAuthModal from '../components/EmailAuthModal';
 
 const LoginPage: React.FC = () => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const location = useLocation();
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const { isAuthenticated, isLoading, refreshUser, tokenReady } = useAuth();
 
   // Get the redirect path from location state or default to home
   const from = (location.state)?.from?.pathname || (location.state)?.returnTo || '/';
 
   // Store the redirect path for the email login flow
-  React.useEffect(() => {
+  useEffect(() => {
     if (from && from !== '/') {
       localStorage.setItem('auth_redirect', from);
     }
   }, [from]);
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const localRedirect = localStorage.getItem('auth_redirect');
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectToFromURLParams = urlParams.get('redirectTo');
+      //Taking this logic from older useAuth. Not sure why are we also adding '/' here.
+      const redirectTo = redirectToFromURLParams || localRedirect || '/';
+      // Clear storage
+      localStorage.removeItem('auth_redirect');
+      setTimeout(() => {
+        window.location.href = window.location.origin + redirectTo;
+      }, 300);
+    }
+  }, [isAuthenticated, isLoading]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
