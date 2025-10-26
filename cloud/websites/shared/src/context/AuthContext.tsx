@@ -15,7 +15,7 @@ export type AuthContextType = {
   signIn: (
     email: string,
     password: string,
-  ) => Promise<{ error: null | unknown }>;
+  ) => Promise<{data: { session: Session | null; user: User | null } | null;error: null | unknown }>;
   signUp: (
     email: string,
     password: string,
@@ -66,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         await exchangeForCoreToken(data.session.access_token);
 
+        //TODO: I think we need to take this out of here to standardize things.
         // Manual redirect to dashboard after successful sign in
         setTimeout(() => {
           console.log("Redirecting to account after successful sign in");
@@ -73,10 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, 500);
       }
 
-      return { error };
+      return { data, error };
     } catch (error) {
       console.error("Error during sign in:", error);
-      return { error };
+      return { data:null,error };
     }
   };
 

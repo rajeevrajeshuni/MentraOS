@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import { supabase } from "../utils/supabase";
+import { useAuth } from '../hooks/useAuth';
 
 interface EmailAuthModalProps {
   open: boolean;
@@ -28,6 +29,8 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const { signIn, signUp } = useAuth();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -37,33 +40,24 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
     try {
       if (isSignUp) {
         // Handle sign up
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-          },
-        });
+        const { error: signUpError } = await signUp(email, password);
 
         if (signUpError) {
-          setError(signUpError.message);
+          setError(signUpError.toString());
         } else {
           setMessage("Account created! Check your email for confirmation.");
         }
       } else {
         // Handle sign in
-        const { error: signInError, data } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+        const { data, error: signInError } =
+          await signIn(email,password)
 
         if (signInError) {
-          setError(signInError.message);
-        } else if (data.session) {
+          setError(signInError.toString());
+        } else if (data?.session) {
           // Successfully logged in, close the modal and let AuthContext handle redirect
           setMessage("Login successful! Redirecting...");
-
+          //TODO: Do we need to change anything here to standardize?
           // Close the modal after a brief delay
           setTimeout(() => {
             onOpenChange(false);
