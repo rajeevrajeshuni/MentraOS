@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@mentra/shared";
 import api from "@/services/api.service";
 import OrgSwitcher from "./OrgSwitcher";
 import ContactEmailBanner from "./ui/ContactEmailBanner";

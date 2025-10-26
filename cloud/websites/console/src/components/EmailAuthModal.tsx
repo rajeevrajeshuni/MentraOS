@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog";
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from "@mentra/shared";
 
 interface EmailAuthModalProps {
   open: boolean;

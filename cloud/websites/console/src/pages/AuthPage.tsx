@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '../utils/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@mentra/shared';
 import { Button } from "@/components/ui/button";
 import EmailAuthModal from '../components/EmailAuthModal';
 import api from '../services/api.service';

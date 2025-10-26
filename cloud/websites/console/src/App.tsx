@@ -18,7 +18,7 @@ import OrganizationSettings from "./pages/OrganizationSettings";
 import Members from "./pages/Members";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { AuthProvider, useAuth } from "@mentra/shared";
 import { OrganizationProvider } from "./context/OrganizationContext";
 import { useAccountStore } from "./stores/account.store";
 import { useOrgStore } from "./stores/orgs.store";
