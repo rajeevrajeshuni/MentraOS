@@ -5,13 +5,13 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "../utils/supabase";
 import { Button } from "../components/ui/button";
 import EmailAuthModal from "../components/EmailAuthModal";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@mentra/shared";
 import Header from "../components/Header";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   // Get the redirect path from location state, URL params, or default to /account
@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
 
   // Redirect to original destination once authenticated (handles Google & Email OAuth)
   useEffect(() => {
-    if (!loading && isAuthenticated) {
+    if (!isLoading && isAuthenticated) {
       const authRedirect = localStorage.getItem("auth_redirect");
       if (authRedirect) {
         // Clear redirect and navigate
@@ -44,7 +44,7 @@ const LoginPage: React.FC = () => {
         window.location.href = `${window.location.origin}/account`;
       }
     }
-  }, [loading, isAuthenticated]);
+  }, [isLoading, isAuthenticated]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

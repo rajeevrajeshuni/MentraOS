@@ -5,21 +5,19 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Toaster } from "sonner";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth} from "@mentra/shared";
 import LoginPage from "./pages/LoginPage";
 import AccountPage from "./pages/AccountPage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
 import ExportDataPage from "./pages/ExportDataPage";
 import AuthFlowPage from "./pages/AuthFlowPage";
-// import DashboardLayout from './components/DashboardLayout'
-import { useAuth } from "./hooks/useAuth";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, loading, user, session } = useAuth();
+  const { isAuthenticated, isLoading, user, session } = useAuth();
 
   // Don't redirect immediately while still loading
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -31,7 +29,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const hasCoreToken = !!localStorage.getItem("core_token");
 
   // Only redirect when we're confident the user isn't authenticated
-  if (!isAuthenticated && !loading && !user && !session && !hasCoreToken) {
+  if (!isAuthenticated && !isLoading && !user && !session && !hasCoreToken) {
     console.log("User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
   }

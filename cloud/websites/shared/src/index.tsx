@@ -8,5 +8,9 @@ export const SharedButton: React.FC = () => {
 // Export useAuth hook
 export { useAuth } from './hooks/useAuth';
 
+// Export AuthProvider
+
+export { AuthProvider } from './context/AuthContext'
+
 // Export EmailModal component
 export { default as EmailAuthModal } from './components/EmailAuthModal';
