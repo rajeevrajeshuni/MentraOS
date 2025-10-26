@@ -30,6 +30,7 @@ export interface AuthContextType {
   coreToken: string | null;
   tokenReady: boolean;
   isWebViewAuth: boolean;
+  //TODO: Need to add data as return here for SignIn.
   signIn: (
     email: string,
     password: string,
