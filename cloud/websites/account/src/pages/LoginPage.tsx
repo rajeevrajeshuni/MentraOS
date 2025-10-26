@@ -4,7 +4,7 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@mentra/shared";
 import { Button } from "../components/ui/button";
-import EmailAuthModal from "../components/EmailAuthModal";
+import { EmailAuthModal } from "@mentra/shared";
 import { useAuth } from "@mentra/shared";
 import Header from "../components/Header";
 
@@ -139,6 +139,7 @@ const LoginPage: React.FC = () => {
           <EmailAuthModal
             open={isEmailModalOpen}
             onOpenChange={setIsEmailModalOpen}
+            redirectUrl={window.location.origin}
           />
         </div>
       </main>
