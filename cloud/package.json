@@ -1,7 +1,8 @@
 {
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "websites/*"
   ],
   "scripts": {
     "build": "cd packages/sdk && bun run build",
@@ -16,10 +17,8 @@
     "porter": "docker compose -f docker-compose.porter.local.yml up --build",
     "test": "bun run packages/cloud/src/tests/run-tests.ts",
     "test:bun": "bun test",
-
     "console": "cd websites/console && bun run dev",
     "store": "cd websites/store && bun run dev",
-
     "ngrok:isaiah": "ngrok http --url=isaiah.augmentos.cloud 8002",
     "ngrok:isaiah2": "ngrok http --url=isaiah.mentra.glass 8002",
     "ngrok:israelov": "ngrok http --url=israelovpuddle.ngrok.app 8002"
@@ -56,6 +55,7 @@
     "bun-types": "1.0.17",
     "concurrently": "^9.1.2",
     "eslint": "^9.20.1",
+    "eslint-plugin-import": "^2.32.0",
     "globals": "^15.15.0",
     "pm2": "^5.4.3",
     "tsx": "^4.19.3",

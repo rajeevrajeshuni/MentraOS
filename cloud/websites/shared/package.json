@@ -1,0 +1,13 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "Shared code for all websites.",
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
