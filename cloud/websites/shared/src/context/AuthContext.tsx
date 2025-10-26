@@ -34,12 +34,12 @@ export interface AuthContextType {
   signIn: (
     email: string,
     password: string,
-    redirectUrl?: string,
+    redirectUrl?: string | null,
   ) => Promise<{ error: null | unknown }>;
   signUp: (
     email: string,
     password: string,
-    redirectUrl?: string,
+    redirectUrl?: string | null,
   ) => Promise<{ error: null | unknown }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -192,7 +192,7 @@ export function AuthProvider({
   const signIn = async (
     email: string,
     password: string,
-    redirectUrl: string = "/dashboard",
+    redirectUrl?: string | null,
   ) => {
     try {
       console.log("Signing in with email/password");
@@ -231,7 +231,7 @@ export function AuthProvider({
   const signUp = async (
     email: string,
     password: string,
-    redirectUrl: string = "/dashboard",
+    redirectUrl?: string | null,
   ) => {
     try {
       console.log("Signing up with email/password");
