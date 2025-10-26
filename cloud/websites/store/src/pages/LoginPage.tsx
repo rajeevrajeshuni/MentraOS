@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { supabase } from '../utils/supabase';
+import { supabase } from '@mentra/shared';
 import Header from '../components/Header';
 import { Button } from '../components/ui/button';
 import EmailAuthModal from '../components/EmailAuthModal';

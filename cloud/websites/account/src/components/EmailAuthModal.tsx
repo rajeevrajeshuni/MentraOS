@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "./ui/dialog";
-import { supabase } from "../utils/supabase";
+import { supabase } from "@mentra/shared";
 
 interface EmailAuthModalProps {
   open: boolean;

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { supabase } from '../utils/supabase';
+import { supabase } from '@mentra/shared';
 import { useAuth } from '@mentra/shared';
 import { Button } from "@/components/ui/button";
 import EmailAuthModal from '../components/EmailAuthModal';

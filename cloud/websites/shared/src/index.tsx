@@ -14,3 +14,6 @@ export { AuthProvider } from './context/AuthContext'
 
 // Export EmailModal component
 export { default as EmailAuthModal } from './components/EmailAuthModal';
+
+//Export supabase object
+export {supabase} from './utils/supabase';

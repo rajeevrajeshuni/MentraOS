@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter
 } from "../components/ui/dialog";
-import { supabase } from '../utils/supabase';
+import { supabase } from '@mentra/shared';
 import { useLocation } from 'react-router-dom';
 
 interface EmailAuthModalProps {
