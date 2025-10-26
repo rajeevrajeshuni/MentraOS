@@ -17,3 +17,7 @@ export { default as EmailAuthModal } from './auth/components/EmailAuthModal';
 
 //Export supabase object
 export {supabase} from './auth/utils/supabase';
+
+//Export LoginUI
+
+export {LoginUI} from './auth/components/LoginUI';

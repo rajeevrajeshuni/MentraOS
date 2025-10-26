@@ -1,0 +1,131 @@
+import React from 'react';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from '../utils/supabase';
+import { Button } from '../components/ui/button';
+import EmailAuthModal  from './EmailAuthModal';
+import Header from './Header';
+
+interface LoginUIProps {
+  /** Logo image URL */
+  logoUrl?: string;
+  /** Site name to display below logo */
+  siteName: string;
+  /** Whether to show the header component */
+  showHeader?: boolean;
+  /** Optional message to display above sign-in options */
+  message?: string;
+  /** Redirect path after successful authentication */
+  redirectTo: string;
+  /** Email modal redirect path */
+  emailRedirectPath: string;
+  /** Email modal open state */
+  isEmailModalOpen: boolean;
+  /** Email modal state setter */
+  setIsEmailModalOpen: (open: boolean) => void;
+}
+
+export const LoginUI: React.FC<LoginUIProps> = ({
+  logoUrl = "https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall",
+  siteName,
+  showHeader = false,
+  message,
+  redirectTo,
+  emailRedirectPath,
+  isEmailModalOpen,
+  setIsEmailModalOpen,
+}) => {
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {showHeader && <Header />}
+
+      <main className="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
+          {/* Logo and Site Name */}
+          <div className="flex items-end select-none">
+            <img src={logoUrl} alt="Mentra Logo" />
+          </div>
+          <span className="ml-2 font-medium text-lg text-gray-800 mb-6">
+            {siteName}
+          </span>
+
+          <div className="w-full space-y-4">
+            <div className="text-center mb-2">
+              <h2 className="text-xl font-semibold">Sign in to continue</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Choose your preferred sign in method
+              </p>
+              {message && (
+                <p className="mt-4 text-sm text-blue-600 bg-blue-50 p-3 rounded-md">
+                  {message}
+                </p>
+              )}
+            </div>
+
+            {/* Social Provider Sign In */}
+            <Auth
+              supabaseClient={supabase}
+              appearance={{
+                theme: ThemeSupa,
+                style: {
+                  button: {
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                  },
+                  anchor: {
+                    display: 'none'
+                  },
+                  container: {
+                    width: '100%'
+                  }
+                },
+                className: {
+                  message: 'hidden',
+                  divider: 'hidden',
+                  label: 'hidden',
+                  input: 'hidden',
+                }
+              }}
+              providers={['google', 'apple']}
+              view="sign_in"
+              redirectTo={redirectTo}
+              showLinks={false}
+              onlyThirdPartyProviders={true}
+            />
+
+            {/* Email Sign In Divider and Button */}
+            <div className="w-full flex flex-col items-center space-y-4 mt-4">
+              <div className="flex items-center w-full">
+                <div className="flex-grow h-px bg-gray-300"></div>
+                <div className="px-4 text-sm text-gray-500">or</div>
+                <div className="flex-grow h-px bg-gray-300"></div>
+              </div>
+
+              <Button
+                className="w-full py-2"
+                onClick={() => setIsEmailModalOpen(true)}
+                variant="outline"
+              >
+                Sign in with Email
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-center text-sm text-gray-500 mt-6">
+            <p>
+              By signing in, you agree to our Terms of Service and Privacy Policy.
+            </p>
+          </div>
+
+          {/* Email Auth Modal */}
+          <EmailAuthModal
+            open={isEmailModalOpen}
+            onOpenChange={setIsEmailModalOpen}
+            redirectPath={emailRedirectPath}
+          />
+        </div>
+      </main>
+    </div>
+  );
+};
