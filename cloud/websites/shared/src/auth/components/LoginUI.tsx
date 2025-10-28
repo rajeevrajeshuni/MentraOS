@@ -4,15 +4,12 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '../utils/supabase';
 import { Button } from '../components/ui/button';
 import EmailAuthModal  from './EmailAuthModal';
-import Header from './Header';
 
 interface LoginUIProps {
   /** Logo image URL */
   logoUrl?: string;
   /** Site name to display below logo */
   siteName: string;
-  /** Whether to show the header component */
-  showHeader?: boolean;
   /** Optional message to display above sign-in options */
   message?: string;
   /** Redirect path after successful authentication */
@@ -28,7 +25,6 @@ interface LoginUIProps {
 export const LoginUI: React.FC<LoginUIProps> = ({
   logoUrl = "https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall",
   siteName,
-  showHeader = false,
   message,
   redirectTo,
   emailRedirectPath,
@@ -37,8 +33,6 @@ export const LoginUI: React.FC<LoginUIProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {showHeader && <Header />}
-
       <main className="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
           {/* Logo and Site Name */}

@@ -31,7 +31,6 @@ const LoginPage: React.FC = () => {
   return (
     <LoginUI
       siteName="Store"
-      showHeader={false}
       redirectTo={`${window.location.origin}${from}`}
       emailRedirectPath="/"
       isEmailModalOpen={isEmailModalOpen}

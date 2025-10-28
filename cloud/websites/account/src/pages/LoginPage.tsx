@@ -37,7 +37,6 @@ const LoginPage: React.FC = () => {
   return (
     <LoginUI
       siteName="Account"
-      showHeader={true}
       message={message}
       redirectTo={`${window.location.origin}/login`}
       emailRedirectPath="/"
