@@ -81,7 +81,7 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>
             {isSignUp ? "Create an Account" : "Sign In with Email"}

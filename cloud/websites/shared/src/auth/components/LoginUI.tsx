@@ -105,15 +105,14 @@ export const LoginUI: React.FC<LoginUIProps> = ({
               By signing in, you agree to our Terms of Service and Privacy Policy.
             </p>
           </div>
-
-          {/* Email Auth Modal */}
-          <EmailAuthModal
-            open={isEmailModalOpen}
-            onOpenChange={setIsEmailModalOpen}
-            redirectPath={emailRedirectPath}
-          />
         </div>
       </main>
+      {/* Email Auth Modal */}
+      <EmailAuthModal
+        open={isEmailModalOpen}
+        onOpenChange={setIsEmailModalOpen}
+        redirectPath={emailRedirectPath}
+      />
     </div>
   );
 };
