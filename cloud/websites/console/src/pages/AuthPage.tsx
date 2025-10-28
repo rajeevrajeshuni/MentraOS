@@ -95,7 +95,7 @@ const AuthPage: React.FC = () => {
 
   return (
     <LoginUI
-      siteName="MentraOS Developer Portal"
+      siteName="Developer"
       message={inviteMessage}
       redirectTo={
         inviteToken
