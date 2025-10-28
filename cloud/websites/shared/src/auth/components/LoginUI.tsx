@@ -96,10 +96,10 @@ export const LoginUI: React.FC<LoginUIProps> = ({
 
             {/* Email Sign In Divider and Button */}
             <div className="w-full flex flex-col items-center space-y-4 mt-4">
-              <div className="flex items-center w-full">
-                <div className="flex-grow h-px bg-gray-300"></div>
-                <div className="px-4 text-sm text-gray-500">or</div>
-                <div className="flex-grow h-px bg-gray-300"></div>
+              <div className="relative flex items-center w-full">
+                <div className="flex-1 border-t border-gray-300"></div>
+                <span className="px-4 text-sm text-gray-500">or</span>
+                <div className="flex-1 border-t border-gray-300"></div>
               </div>
 
               <Button
