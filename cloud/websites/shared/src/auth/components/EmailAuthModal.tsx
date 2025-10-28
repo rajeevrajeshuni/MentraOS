@@ -16,16 +16,19 @@ interface EmailAuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   redirectPath: string;
+  isSignUp: boolean;
+  setIsSignUp: (arg0: boolean) => void;
 }
 
 const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
   open,
   onOpenChange,
   redirectPath,
+  isSignUp,
+  setIsSignUp,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -73,12 +76,6 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
     }
   };
 
-  const toggleAuthMode = () => {
-    setIsSignUp(!isSignUp);
-    setError(null);
-    setMessage(null);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -124,17 +121,7 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
               <div className="text-sm text-green-600 mt-2">{message}</div>
             )}
           </div>
-
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:space-x-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={toggleAuthMode}
-              disabled={loading}
-            >
-              {isSignUp ? "Already have an account?" : "Need an account?"}
-            </Button>
-
             <Button type="submit" disabled={loading}>
               {loading
                 ? "Processing..."

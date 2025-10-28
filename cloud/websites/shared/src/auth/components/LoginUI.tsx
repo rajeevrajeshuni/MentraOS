@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '../utils/supabase';
@@ -31,6 +31,7 @@ export const LoginUI: React.FC<LoginUIProps> = ({
   isEmailModalOpen,
   setIsEmailModalOpen,
 }) => {
+  const [isSignUp, setIsSignUp] = useState(false);
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <main className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center justify-center">
@@ -94,7 +95,11 @@ export const LoginUI: React.FC<LoginUIProps> = ({
 
               <Button
                 className="w-full py-2"
-                onClick={() => setIsEmailModalOpen(true)}
+                onClick={() => {
+                  setIsSignUp(false);
+                  setIsEmailModalOpen(true);
+                  }
+                }
                 variant="outline"
               >
                 Sign in with Email
@@ -107,6 +112,18 @@ export const LoginUI: React.FC<LoginUIProps> = ({
               By signing in, you agree to our Terms of Service and Privacy Policy.
             </p>
           </div>
+          <div className="text-center text-sm text-gray-500 mt-6">
+            <p
+              onClick={() => {
+                setIsSignUp(true);
+                setIsEmailModalOpen(true);
+                }
+              }
+              style={{ cursor: 'pointer' }}
+            >
+              <u>Don't have an account? Sign up</u>
+            </p>
+          </div>
         </div>
       </main>
       {/* Email Auth Modal */}
@@ -114,6 +131,8 @@ export const LoginUI: React.FC<LoginUIProps> = ({
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
         redirectPath={emailRedirectPath}
+        isSignUp={isSignUp}
+        setIsSignUp={setIsEmailModalOpen}
       />
     </div>
   );
