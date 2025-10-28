@@ -3,11 +3,9 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '../utils/supabase';
 import { Button } from '../components/ui/button';
-import EmailAuthModal  from './EmailAuthModal';
+import EmailAuthModal from './EmailAuthModal';
 
 interface LoginUIProps {
-  /** Logo image URL */
-  logoUrl?: string;
   /** Site name to display below logo */
   siteName: string;
   /** Optional message to display above sign-in options */
@@ -23,7 +21,6 @@ interface LoginUIProps {
 }
 
 export const LoginUI: React.FC<LoginUIProps> = ({
-  logoUrl = "https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall",
   siteName,
   message,
   redirectTo,
@@ -33,29 +30,27 @@ export const LoginUI: React.FC<LoginUIProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <main className="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
-          {/* Logo and Site Name */}
-          <div className="flex items-end select-none">
-            <img src={logoUrl} alt="Mentra Logo" />
-          </div>
-          <span className="ml-2 font-medium text-lg text-gray-800 mb-6">
-            {siteName}
-          </span>
-
-          <div className="w-full space-y-4">
-            <div className="text-center mb-2">
-              <h2 className="text-xl font-semibold">Sign in to continue</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Choose your preferred sign in method
+      <main className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center justify-center">
+        
+        
+        <div className="max-w-lg w-full text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">
+            Welcome to the MentraOS {siteName} Portal
+          </h1>
+          <div className="text-center mb-2">
+            <p className="text-sm text-gray-500 mt-1">
+              Choose your preferred sign in method
+            </p>
+            {message && (
+              <p className="mt-4 text-sm text-blue-600 bg-blue-50 p-3 rounded-md">
+                {message}
               </p>
-              {message && (
-                <p className="mt-4 text-sm text-blue-600 bg-blue-50 p-3 rounded-md">
-                  {message}
-                </p>
-              )}
-            </div>
-
+            )}
+          </div>
+        </div>
+        {/* --- Login Card --- */}
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
+          <div className="w-full space-y-4">
             {/* Social Provider Sign In */}
             <Auth
               supabaseClient={supabase}
@@ -68,18 +63,18 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                     fontWeight: '500',
                   },
                   anchor: {
-                    display: 'none'
+                    display: 'none',
                   },
                   container: {
-                    width: '100%'
-                  }
+                    width: '100%',
+                  },
                 },
                 className: {
                   message: 'hidden',
                   divider: 'hidden',
                   label: 'hidden',
                   input: 'hidden',
-                }
+                },
               }}
               providers={['google', 'apple']}
               view="sign_in"
@@ -87,7 +82,6 @@ export const LoginUI: React.FC<LoginUIProps> = ({
               showLinks={false}
               onlyThirdPartyProviders={true}
             />
-
             {/* Email Sign In Divider and Button */}
             <div className="w-full flex flex-col items-center space-y-4 mt-4">
               <div className="relative flex items-center w-full">
