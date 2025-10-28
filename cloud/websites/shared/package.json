@@ -6,9 +6,11 @@
   "types": "src/index.tsx",
   "author": "",
   "license": "ISC",
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "@radix-ui/react-label": "^2.1.3",
