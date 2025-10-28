@@ -95,7 +95,7 @@ const AuthPage: React.FC = () => {
 
   return (
     <LoginUI
-      siteName="Developer"
+      siteName="Developer Portal"
       message={inviteMessage}
       redirectTo={
         inviteToken

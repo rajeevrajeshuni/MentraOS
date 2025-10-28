@@ -40,7 +40,7 @@ export const LoginUI: React.FC<LoginUIProps> = ({
           
           <div className="w-full text-center mt-6 mb-6">
             <h1 className="text-2xl font-bold mb-2">
-              Welcome to the MentraOS {siteName} Portal
+              Welcome to the MentraOS {siteName}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               Choose your preferred sign in method
