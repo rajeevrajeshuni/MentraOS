@@ -33,14 +33,15 @@ export const LoginUI: React.FC<LoginUIProps> = ({
 }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <main className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center justify-center">
-        <img src={logoUrl} alt="Mentra Logo" />
-        <div className="max-w-lg w-full text-center mt-6 mb-6">
-          <h1 className="text-2xl font-bold mb-2">
-            Welcome to the MentraOS {siteName} Portal
-          </h1>
-          <div className="text-center mb-2">
+    <div className="min-h-screen bg-gray-50 flex flex-col" style={{ width: '100%' }}>
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8" style={{ maxWidth: '100%' }}>
+        <div className="w-full max-w-md mx-auto flex flex-col items-center" style={{ maxWidth: '28rem' }}>
+          <img src={logoUrl} alt="Mentra Logo" />
+          
+          <div className="w-full text-center mt-6 mb-6">
+            <h1 className="text-2xl font-bold mb-2">
+              Welcome to the MentraOS {siteName} Portal
+            </h1>
             <p className="text-sm text-gray-500 mt-1">
               Choose your preferred sign in method
             </p>
@@ -50,89 +51,91 @@ export const LoginUI: React.FC<LoginUIProps> = ({
               </p>
             )}
           </div>
-        </div>
-        {/* --- Login Card --- */}
-        <div className="max-w-sm w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
-          <div className="w-full space-y-4">
-            {/* Social Provider Sign In */}
-            <Auth
-              supabaseClient={supabase}
-              appearance={{
-                theme: ThemeSupa,
-                style: {
-                  button: {
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '500',
+
+          {/* --- Login Card --- */}
+          <div className="w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
+            <div className="w-full space-y-4">
+              {/* Social Provider Sign In */}
+              <Auth
+                supabaseClient={supabase}
+                appearance={{
+                  theme: ThemeSupa,
+                  style: {
+                    button: {
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                    },
+                    anchor: {
+                      display: 'none',
+                    },
+                    container: {
+                      width: '100%',
+                    },
                   },
-                  anchor: {
-                    display: 'none',
+                  className: {
+                    message: 'hidden',
+                    divider: 'hidden',
+                    label: 'hidden',
+                    input: 'hidden',
                   },
-                  container: {
-                    width: '100%',
-                  },
-                },
-                className: {
-                  message: 'hidden',
-                  divider: 'hidden',
-                  label: 'hidden',
-                  input: 'hidden',
-                },
-              }}
-              providers={['google', 'apple']}
-              view="sign_in"
-              redirectTo={redirectTo}
-              showLinks={false}
-              onlyThirdPartyProviders={true}
-            />
-            {/* Email Sign In Divider and Button */}
-            <div className="w-full flex flex-col items-center space-y-4 mt-4">
-              <div className="relative flex items-center w-full">
-                <div className="flex-1 border-t border-gray-300"></div>
-                <span className="px-4 text-sm text-gray-500">or</span>
-                <div className="flex-1 border-t border-gray-300"></div>
+                }}
+                providers={['google', 'apple']}
+                view="sign_in"
+                redirectTo={redirectTo}
+                showLinks={false}
+                onlyThirdPartyProviders={true}
+              />
+              
+              {/* Email Sign In Divider and Button */}
+              <div className="w-full flex flex-col items-center space-y-4 mt-4">
+                <div className="relative flex items-center w-full">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="px-4 text-sm text-gray-500">or</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+
+                <Button
+                  className="w-full py-2"
+                  onClick={() => {
+                    setIsSignUp(false);
+                    setIsEmailModalOpen(true);
+                  }}
+                  variant="outline"
+                >
+                  Sign in with Email
+                </Button>
               </div>
-
-              <Button
-                className="w-full py-2"
-                onClick={() => {
-                  setIsSignUp(false);
-                  setIsEmailModalOpen(true);
-                  }
-                }
-                variant="outline"
-              >
-                Sign in with Email
-              </Button>
             </div>
-          </div>
 
-          <div className="text-center text-sm text-gray-500 mt-6">
-            <p>
-              By signing in, you agree to our Terms of Service and Privacy Policy.
-            </p>
-          </div>
-          <div className="text-center text-sm text-gray-500 mt-6">
-            <p
-              onClick={() => {
-                setIsSignUp(true);
-                setIsEmailModalOpen(true);
-                }
-              }
-              style={{ cursor: 'pointer' }}
-            >
-              <u>Don't have an account? Sign up</u>
-            </p>
+            <div className="text-center text-sm text-gray-500 mt-6">
+              <p>
+                By signing in, you agree to our Terms of Service and Privacy Policy.
+              </p>
+            </div>
+            
+            <div className="text-center text-sm text-gray-500 mt-6">
+              <p
+                onClick={() => {
+                  setIsSignUp(true);
+                  setIsEmailModalOpen(true);
+                }}
+                className="cursor-pointer underline"
+              >
+                Don't have an account? Sign up
+              </p>
+            </div>
           </div>
         </div>
       </main>
+      
       {/* Email Auth Modal */}
       <EmailAuthModal
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
         redirectPath={emailRedirectPath}
         isSignUp={isSignUp}
-        setIsSignUp={setIsEmailModalOpen}
+        setIsSignUp={setIsSignUp}
       />
     </div>
   );
