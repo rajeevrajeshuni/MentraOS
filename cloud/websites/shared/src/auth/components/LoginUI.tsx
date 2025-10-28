@@ -6,6 +6,8 @@ import { Button } from '../components/ui/button';
 import EmailAuthModal from './EmailAuthModal';
 
 interface LoginUIProps {
+  /** Logo image URL */
+  logoUrl?: string;
   /** Site name to display below logo */
   siteName: string;
   /** Optional message to display above sign-in options */
@@ -21,6 +23,7 @@ interface LoginUIProps {
 }
 
 export const LoginUI: React.FC<LoginUIProps> = ({
+  logoUrl = "https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall",
   siteName,
   message,
   redirectTo,
@@ -31,9 +34,8 @@ export const LoginUI: React.FC<LoginUIProps> = ({
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <main className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center justify-center">
-        
-        
-        <div className="max-w-lg w-full text-center mb-6">
+        <img src={logoUrl} alt="Mentra Logo" />
+        <div className="max-w-lg w-full text-center mt-6 mb-6">
           <h1 className="text-2xl font-bold mb-2">
             Welcome to the MentraOS {siteName} Portal
           </h1>
