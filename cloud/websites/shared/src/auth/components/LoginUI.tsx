@@ -52,7 +52,7 @@ export const LoginUI: React.FC<LoginUIProps> = ({
           </div>
         </div>
         {/* --- Login Card --- */}
-        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
+        <div className="max-w-sm w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
           <div className="w-full space-y-4">
             {/* Social Provider Sign In */}
             <Auth
